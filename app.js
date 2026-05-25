@@ -1,87 +1,98 @@
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-import { getFirestore, collection, addDoc, query, orderBy, onSnapshot, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+const PINGLO_AWS_API_URL = (window.PINGLO_AWS_API_URL || "").replace(/\/$/, "");
+const STORAGE_KEY = "pinglo:production:v2";
 
-// REPLACE THIS WITH YOUR FIREBASE CONFIG
-const firebaseConfig = {
-    apiKey: "YOUR_API_KEY",
-    authDomain: "your-app.firebaseapp.com",
-    projectId: "your-app",
-    storageBucket: "your-app.appspot.com",
-    messagingSenderId: "123456789",
-    appId: "1:123456789:web:abcdef"
-};
+document.addEventListener("DOMContentLoaded", () => {
+  const feedEl = document.getElementById("feed");
+  const postBtn = document.getElementById("postBtn");
+  const postInput = document.getElementById("postInput");
 
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
-const db = getFirestore(app);
-
-// --- AUTH LOGIC ---
-const loginBtn = document.getElementById('loginBtn');
-if (loginBtn) {
-    loginBtn.addEventListener('click', async () => {
-        const email = document.getElementById('email').value;
-        const pass = document.getElementById('password').value;
-        try {
-            await signInWithEmailAndPassword(auth, email, pass);
-            window.location.href = 'index.html'; // Redirect to home
-        } catch (err) { alert(err.message); }
+  if (feedEl) renderLegacyFeed(feedEl);
+  if (postBtn && postInput) {
+    postBtn.addEventListener("click", async () => {
+      const text = postInput.value.trim();
+      if (!text) return;
+      const state = loadState();
+      const profile = getAccount();
+      state.posts = state.posts || [];
+      state.posts.unshift({
+        id: makeId("post"),
+        authorId: profile.id,
+        authorName: profile.name || profile.handle || "Pinglo User",
+        authorIconId: profile.iconId || "",
+        audience: "popular",
+        content: text,
+        likes: 0,
+        comments: [],
+        createdAt: Date.now()
+      });
+      saveState(state);
+      await syncState(state);
+      postInput.value = "";
+      renderLegacyFeed(feedEl);
     });
+  }
+});
+
+function getAccount() {
+  try {
+    return JSON.parse(localStorage.getItem("pinglo_account") || "null") || { id: "me", name: "Pinglo User" };
+  } catch {
+    return { id: "me", name: "Pinglo User" };
+  }
 }
 
-// --- FIRESTORE LOGIC (Main Feed) ---
-const feedEl = document.getElementById('feed');
-const postBtn = document.getElementById('postBtn');
-const postInput = document.getElementById('postInput');
-
-if (feedEl) {
-    // Listen for real-time updates from "posts" collection
-    const q = query(collection(db, "posts"), orderBy("createdAt", "desc"));
-    
-    onSnapshot(q, (snapshot) => {
-        feedEl.innerHTML = ''; // Clear local feed
-        snapshot.forEach((doc) => {
-            const data = doc.data();
-            renderPostCard(data);
-        });
-    });
+function loadState() {
+  try {
+    return JSON.parse(localStorage.getItem(STORAGE_KEY) || "null") || { posts: [] };
+  } catch {
+    return { posts: [] };
+  }
 }
 
-if (postBtn) {
-    postBtn.addEventListener('click', async () => {
-        const text = postInput.value.trim();
-        if (!text) return;
-
-        try {
-            await addDoc(collection(db, "posts"), {
-                user: auth.currentUser?.email || "Anonymous",
-                text: text,
-                likes: 0,
-                createdAt: serverTimestamp()
-            });
-            postInput.value = '';
-        } catch (err) { console.error("Error adding post: ", err); }
-    });
+function saveState(state) {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
 }
 
-function renderPostCard(p) {
-    const postHTML = `
-        <article class="post">
-            <div class="post-top">
-                <div class="post-user">
-                    <div class="avatar" style="width:46px;height:46px;border-radius:16px;">${p.user[0].toUpperCase()}</div>
-                    <div class="user-meta">
-                        <strong>${p.user}</strong>
-                        <span>Just now</span>
-                    </div>
-                </div>
+async function syncState(state) {
+  if (!PINGLO_AWS_API_URL) return;
+  await fetch(`${PINGLO_AWS_API_URL}/state`, {
+    method: "PUT",
+    headers: {
+      "content-type": "application/json",
+      "x-user-id": getAccount().id || "me"
+    },
+    body: JSON.stringify({ state })
+  }).catch((error) => console.warn("Pinglo AWS sync failed", error));
+}
+
+function renderLegacyFeed(feedEl) {
+  const posts = (loadState().posts || []).sort((a, b) => b.createdAt - a.createdAt);
+  feedEl.innerHTML = posts.length
+    ? posts.map((post) => `
+      <article class="post">
+        <div class="post-top">
+          <div class="post-user">
+            <div class="avatar" style="width:46px;height:46px;border-radius:16px;">${escapeHtml(getInitials(post.authorName))}</div>
+            <div class="user-meta">
+              <strong>${escapeHtml(post.authorName)}</strong>
+              <span>${new Date(post.createdAt).toLocaleString()}</span>
             </div>
-            <p>${p.text}</p>
-            <div class="post-actions">
-                <div class="action">♡ <span>${p.likes || 0}</span></div>
-                <div class="action">💬 0</div>
-                <div class="action">⇪ Share</div>
-            </div>
-        </article>`;
-    feedEl.insertAdjacentHTML('beforeend', postHTML);
+          </div>
+        </div>
+        <p>${escapeHtml(post.content)}</p>
+      </article>
+    `).join("")
+    : "<p>No posts yet.</p>";
+}
+
+function getInitials(value) {
+  return String(value || "PG").trim().split(/\s+/).slice(0, 2).map((part) => part[0]).join("").toUpperCase() || "PG";
+}
+
+function makeId(prefix) {
+  return `${prefix}_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
+}
+
+function escapeHtml(value) {
+  return String(value || "").replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll('"', "&quot;").replaceAll("'", "&#039;");
 }

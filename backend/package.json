@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "build": "echo \"No build step required\"",
-    "test": "node --check src/state.js && node --check src/uploads.js"
+    "test": "node --check src/state.js && node --check src/uploads.js && node --check src/admin.js"
   },
   "dependencies": {
     "@aws-sdk/client-dynamodb": "^3.583.0",

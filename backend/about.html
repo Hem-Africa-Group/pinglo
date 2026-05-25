@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>About Pinglo | H.E.M. Africa</title>
+    <link rel="icon" href="./pinglo-icon.svg" type="image/svg+xml" />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        :root { --void: #020202; }
+        body { 
+            background-color: var(--void); 
+            color: white; 
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif; 
+            opacity: 0; 
+            transition: opacity 0.5s ease; 
+        }
+        .glass { 
+            background: rgba(255, 255, 255, 0.03); 
+            backdrop-filter: blur(20px); 
+            border: 1px solid rgba(255, 255, 255, 0.1); 
+        }
+        .gradient-text { 
+            background: linear-gradient(to bottom right, #fff, #60a5fa); 
+            -webkit-background-clip: text; 
+            -webkit-text-fill-color: transparent; 
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between overflow-x-hidden">
+    <script>
+        // Fade in effect on load
+        window.onload = () => { document.body.style.opacity = '1'; };
+    </script>
+
+    <nav class="p-8 flex items-center justify-between">
+        <a href="./index.html" class="flex items-center space-x-3 hover:opacity-80 transition outline-none">
+            <img src="./pinglo-icon.svg" alt="Pinglo" class="w-10 h-10">
+            <span class="text-2xl font-black tracking-tighter">Pinglo</span>
+        </a>
+        <div class="flex items-center space-x-6">
+            <div class="hidden md:block text-[10px] font-bold text-gray-500 uppercase tracking-[0.2em]">
+                H.E.M. Africa Digital Infrastructure
+            </div>
+            <a href="./index.html" class="text-sm font-medium bg-white/10 hover:bg-white/20 px-4 py-2 rounded-full transition">
+                Return to Login
+            </a>
+        </div>
+    </nav>
+
+    <main class="flex-1 max-w-7xl mx-auto w-full px-8 my-12 space-y-24">
+        
+        <section class="text-center max-w-4xl mx-auto space-y-8 mt-8">
+            <h1 class="text-6xl md:text-8xl font-black tracking-tight leading-[0.9] gradient-text pb-2">
+                Redefining <br>Digital Connection.
+            </h1>
+            <p class="text-gray-400 text-xl leading-relaxed max-w-2xl mx-auto">
+                Pinglo is a premier hybrid social ecosystem. We merge real-time, encrypted instant messaging with high-fidelity disappearing stories to create a unified space for your verified circle.
+            </p>
+        </section>
+
+        <section class="grid md:grid-cols-3 gap-8">
+            <div class="glass p-10 rounded-[2.5rem] flex flex-col items-start hover:bg-white/[0.04] transition duration-300">
+                <div class="p-3 bg-white/5 rounded-2xl border border-white/10 mb-6">
+                    <i data-lucide="message-square" class="text-blue-400 w-6 h-6"></i>
+                </div>
+                <h3 class="text-2xl font-bold mb-3">Instant Messaging</h3>
+                <p class="text-gray-400 leading-relaxed text-sm">
+                    Experience zero-latency, private communication. Built for speed and security, ensuring your conversations remain strictly within your network.
+                </p>
+            </div>
+
+            <div class="glass p-10 rounded-[2.5rem] flex flex-col items-start hover:bg-white/[0.04] transition duration-300">
+                <div class="p-3 bg-white/5 rounded-2xl border border-white/10 mb-6">
+                    <i data-lucide="aperture" class="text-blue-400 w-6 h-6"></i>
+                </div>
+                <h3 class="text-2xl font-bold mb-3">Ephemeral Stories</h3>
+                <p class="text-gray-400 leading-relaxed text-sm">
+                    Share high-fidelity moments that naturally disappear. Maintain a clean digital footprint while staying present with your friend system.
+                </p>
+            </div>
+
+            <div class="glass p-10 rounded-[2.5rem] flex flex-col items-start hover:bg-white/[0.04] transition duration-300">
+                <div class="p-3 bg-white/5 rounded-2xl border border-white/10 mb-6">
+                    <i data-lucide="layers" class="text-blue-400 w-6 h-6"></i>
+                </div>
+                <h3 class="text-2xl font-bold mb-3">H.E.M. Core Integration</h3>
+                <p class="text-gray-400 leading-relaxed text-sm">
+                    Fully synchronized via the proprietary H.E.M. Core Single Sign-On (SSO). Move fluidly between Pinglo, Cinexa, and our broader institutional suite.
+                </p>
+            </div>
+        </section>
+
+        <section class="glass p-12 md:p-16 rounded-[3rem] text-center max-w-4xl mx-auto relative overflow-hidden flex flex-col items-center">
+            <div class="absolute inset-0 bg-blue-600/5 blur-[120px] pointer-events-none"></div>
+            
+            <h2 class="text-3xl md:text-4xl font-black mb-6 relative z-10 tracking-tight">Technological Sovereignty</h2>
+            <p class="text-gray-400 relative z-10 max-w-2xl mx-auto leading-relaxed mb-10">
+                Pinglo isn't just an application; it's a component of a much larger vision for unified digital infrastructure. Designed with an uncompromising executive aesthetic, we prioritize a premium, distraction-free environment allowing you to communicate and connect on your own terms.
+            </p>
+            
+            <a href="./index.html" class="relative z-10 bg-white hover:bg-gray-200 text-black font-bold py-4 px-10 rounded-2xl transition flex items-center space-x-2">
+                <span>Initialize Your Account</span>
+                <i data-lucide="arrow-right" class="w-5 h-5"></i>
+            </a>
+        </section>
+
+    </main>
+
+    <footer class="p-8 border-t border-white/5 mt-12">
+        <div class="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center text-xs text-gray-500 space-y-4 md:space-y-0">
+            <p>© 2026 H.E.M. Africa Group</p>
+            <div class="flex space-x-8 font-medium">
+                <a href="terms.html" class="hover:text-blue-400 transition">Terms of Service</a>
+                <a href="privacy.html" class="hover:text-blue-400 transition">Privacy</a>
+                <a href="help.html" class="hover:text-blue-400 transition">Help Center</a>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // Initialize Lucide icons
+        if (typeof lucide !== 'undefined') {
+            lucide.createIcons();
+        }
+    </script>
+</body>
+</html>

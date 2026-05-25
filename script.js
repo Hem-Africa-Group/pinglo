@@ -2,8 +2,25 @@
 const LEGACY_STORAGE_KEY = "plingo:production:v2";
 const PINGLO_AWS_API_URL = (window.PINGLO_AWS_API_URL || "").replace(/\/$/, "");
 const PINGLO_AWS_USER_ID_KEY = "pinglo:aws:user-id";
+const PINGLO_CHAT_SECRET_KEY = "pinglo:chat:secret";
+const REALTIME_SYNC_INTERVAL = 2500;
+const CORE_APPEALS_URL = "https://core.hemafrica.com/appeals";
+const HEM_PAY_PROVIDER = "H.E.M Pay";
+const PINGLO_KIDS_PRICE_USD = 4.99;
+const PINGLO_KIDS_PRICE_NGN = 4999;
+const SYSTEM_NOTABLE_HANDLES = ["haneeftoomuch", "haneeftoomuch1", "faizul"];
+const SYSTEM_DEVELOPER_HANDLES = ["haneeftoomuch", "haneeftoomuch1", "faizul"];
+const PINGLO_GIFT_CARD_CODES = [
+  { code: "PINGLO-KIDS-4F9C-2026", value: 4999, currency: "NGN", tier: "kids" },
+  { code: "PINGLO-KIDS-7B2A-2026", value: 4999, currency: "NGN", tier: "kids" },
+  { code: "PINGLO-KIDS-9Q8M-2026", value: 4999, currency: "NGN", tier: "kids" },
+  { code: "PINGLO-KIDS-US-4.99-A1", value: 4.99, currency: "USD", tier: "kids" },
+  { code: "PINGLO-KIDS-US-4.99-B2", value: 4.99, currency: "USD", tier: "kids" }
+];
 
 let awsSyncTimer = null;
+let awsRealtimeTimer = null;
+let lastAwsStateHash = "";
 
 const icons = {
   home: '<svg viewBox="0 0 24 24"><path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1Z"/></svg>',
@@ -31,7 +48,13 @@ const icons = {
   help: '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M9.1 9a3 3 0 1 1 5.8 1c-.4.7-1.1 1.1-1.7 1.6-.7.6-1.2 1.1-1.2 2.4"/><path d="M12 17h.01"/></svg>',
   file: '<svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/><path d="M8 13h8M8 17h8M8 9h2"/></svg>',
   menu: '<svg viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></svg>',
-  shield: '<svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z"/></svg>'
+  shield: '<svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z"/></svg>',
+  badge: '<svg viewBox="0 0 24 24"><path d="M12 2 15 5l4.2-.2-.2 4.2 3 3-3 3 .2 4.2-4.2-.2-3 3-3-3-4.2.2.2-4.2-3-3 3-3-.2-4.2L9 5Z"/><path d="m8.5 12.2 2.2 2.2 4.8-5"/></svg>',
+  video: '<svg viewBox="0 0 24 24"><rect x="3" y="5" width="14" height="14" rx="2"/><path d="m17 9 4-2v10l-4-2Z"/></svg>',
+  card: '<svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 10h18M7 15h3"/></svg>',
+  flag: '<svg viewBox="0 0 24 24"><path d="M5 22V4"/><path d="M5 4h11l-1 4 1 4H5"/></svg>',
+  block: '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="m4.9 4.9 14.2 14.2"/></svg>',
+  sparkles: '<svg viewBox="0 0 24 24"><path d="m12 3 1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8Z"/><path d="m19 15 .8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8Z"/></svg>'
 };
 
 const profileGlyphs = {
@@ -101,16 +124,22 @@ let pendingAttachment = null;
 document.addEventListener("DOMContentLoaded", async () => {
   state = await loadStateFromAws();
   applySignedInAccountToState();
+  await secureExistingMessages();
   hydrateIcons(document);
   applyTheme();
   bindGlobalEvents();
   renderShell();
   renderPage();
+  startRealtimeChatSync();
 });
 
 window.addEventListener("hashchange", () => {
   activePage = getRouteFromHash() || "home";
   renderPage();
+});
+
+document.addEventListener("visibilitychange", () => {
+  if (!document.hidden) refreshRealtimeChats();
 });
 
 function getSignedInAccount() {
@@ -124,20 +153,24 @@ function getSignedInAccount() {
 function applySignedInAccountToState() {
   const account = getSignedInAccount();
   if (!account) return;
+  const sameAccount = state.profile.email && account.email && state.profile.email === account.email;
+  const savedHandle = sameAccount && state.profile.handle ? state.profile.handle : "";
   state.profile = {
     ...state.profile,
     id: account.id || state.profile.id,
     email: account.email || state.profile.email,
     username: account.username || state.profile.username,
     name: account.name || state.profile.name,
-    handle: account.handle || state.profile.handle,
+    handle: savedHandle || account.handle || state.profile.handle,
     bio: account.bio || state.profile.bio || "",
     picture: account.picture || state.profile.picture || "",
     initials: account.initials || state.profile.initials,
     status: account.status || state.profile.status,
-    iconId: account.picture ? "" : state.profile.iconId
+    iconId: account.picture || state.profile.picture ? "" : state.profile.iconId
   };
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  state.profile = normalizeProfile(state.profile);
+  persistSignedInProfile();
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(serializeStateForStorage(state)));
 }
 
 function defaultState() {
@@ -149,10 +182,31 @@ function defaultState() {
       status: "Online",
       initials: "PG",
       iconId: "chat-sky",
-      theme: "purple"
+      theme: "purple",
+      accountType: "standard",
+      followers: 0,
+      following: 0,
+      badges: []
     },
     conversations: [],
     posts: [],
+    videos: [],
+    ads: [],
+    people: seedPeople(),
+    reports: [],
+    moderationQueue: [],
+    social: {
+      following: [],
+      blocked: []
+    },
+    billing: {
+      provider: HEM_PAY_PROVIDER,
+      currency: "NGN",
+      selectedPlan: "standard",
+      giftCards: PINGLO_GIFT_CARD_CODES,
+      redeemedGiftCards: [],
+      payments: []
+    },
     recentSearches: [],
     preferences: {
       notifications: true,
@@ -160,7 +214,8 @@ function defaultState() {
       compactMode: false,
       language: "English",
       privacy: "contacts",
-      readReceipts: true
+      readReceipts: true,
+      kidsFilteredFeed: false
     }
   };
 }
@@ -175,7 +230,8 @@ function loadState() {
 }
 
 async function loadStateFromAws() {
-  if (!isAwsEnabled()) return loadState();
+  const localState = await decryptState(loadState());
+  if (!isAwsEnabled()) return localState;
 
   try {
     const response = await fetch(`${PINGLO_AWS_API_URL}/state`, {
@@ -186,12 +242,13 @@ async function loadStateFromAws() {
 
     if (!response.ok) throw new Error(`State load failed: ${response.status}`);
     const payload = await response.json();
-    const merged = mergeState(defaultState(), payload.state || loadState());
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(merged));
+    const merged = await decryptState(mergeState(defaultState(), payload.state || localState));
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(serializeStateForStorage(merged)));
+    lastAwsStateHash = stateHash(merged);
     return merged;
   } catch (error) {
     console.warn("AWS state load failed; using local state", error);
-    return loadState();
+    return localState;
   }
 }
 
@@ -199,16 +256,89 @@ function mergeState(base, saved) {
   return {
     ...base,
     ...saved,
-    profile: { ...base.profile, ...(saved.profile || {}) },
+    profile: normalizeProfile({ ...base.profile, ...(saved.profile || {}) }),
     preferences: { ...base.preferences, ...(saved.preferences || {}) },
     conversations: Array.isArray(saved.conversations) ? saved.conversations : base.conversations,
     posts: Array.isArray(saved.posts) ? saved.posts : base.posts,
+    videos: Array.isArray(saved.videos) ? saved.videos : base.videos,
+    ads: Array.isArray(saved.ads) ? saved.ads : base.ads,
+    people: mergePeople(Array.isArray(saved.people) ? saved.people : base.people),
+    reports: Array.isArray(saved.reports) ? saved.reports : base.reports,
+    moderationQueue: Array.isArray(saved.moderationQueue) ? saved.moderationQueue : base.moderationQueue,
+    social: { ...base.social, ...(saved.social || {}) },
+    billing: { ...base.billing, ...(saved.billing || {}), giftCards: PINGLO_GIFT_CARD_CODES },
     recentSearches: Array.isArray(saved.recentSearches) ? saved.recentSearches : base.recentSearches
   };
 }
 
+function seedPeople() {
+  return [
+    {
+      id: "user_haneeftoomuch",
+      name: "Haneef Too Much",
+      handle: "@haneeftoomuch",
+      bio: "Pinglo founder and H.E.M. Africa builder.",
+      followers: 120000,
+      following: 12,
+      badges: ["verified", "developer"],
+      status: "Online",
+      iconId: "bolt-sky"
+    },
+    {
+      id: "user_haneeftoomuch1",
+      name: "Haneef Too Much 1",
+      handle: "@haneeftoomuch1",
+      bio: "Pinglo developer account.",
+      followers: 84000,
+      following: 20,
+      badges: ["verified", "developer"],
+      status: "Focus",
+      iconId: "rocket-violet"
+    },
+    {
+      id: "user_faizul",
+      name: "Faizul",
+      handle: "@faizul",
+      bio: "Pinglo verified developer.",
+      followers: 64000,
+      following: 18,
+      badges: ["verified", "developer"],
+      status: "Online",
+      iconId: "code-mint"
+    }
+  ];
+}
+
+function mergePeople(people) {
+  const keyed = new Map(seedPeople().map((person) => [normalizeHandle(person.handle), person]));
+  people.forEach((person) => {
+    keyed.set(normalizeHandle(person.handle), normalizeProfile(person));
+  });
+  return [...keyed.values()].map(normalizeProfile);
+}
+
+function normalizeProfile(profile) {
+  const handle = cleanHandle(profile.handle || profile.username || "", profile.name || "Pinglo User");
+  const plainHandle = normalizeHandle(handle);
+  const badges = new Set(profile.badges || []);
+  if (SYSTEM_NOTABLE_HANDLES.includes(plainHandle)) badges.add("verified");
+  if (SYSTEM_DEVELOPER_HANDLES.includes(plainHandle)) {
+    badges.add("verified");
+    badges.add("developer");
+  }
+  return {
+    ...profile,
+    handle,
+    badges: [...badges],
+    accountStatus: profile.accountStatus || "active",
+    accountType: profile.accountType || "standard",
+    followers: Number(profile.followers || 0),
+    following: Number(profile.following || 0)
+  };
+}
+
 function saveState() {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(serializeStateForStorage(state)));
   queueAwsStateSave();
   renderShell();
 }
@@ -219,8 +349,44 @@ function queueAwsStateSave() {
   awsSyncTimer = setTimeout(syncStateToAws, 350);
 }
 
+function startRealtimeChatSync() {
+  if (!isAwsEnabled()) return;
+  clearInterval(awsRealtimeTimer);
+  awsRealtimeTimer = setInterval(refreshRealtimeChats, REALTIME_SYNC_INTERVAL);
+}
+
+async function refreshRealtimeChats() {
+  if (!isAwsEnabled() || document.hidden || awsSyncTimer) return;
+
+  try {
+    const response = await fetch(`${PINGLO_AWS_API_URL}/state`, {
+      headers: {
+        "x-user-id": getAwsUserId()
+      }
+    });
+
+    if (!response.ok) throw new Error(`Realtime sync failed: ${response.status}`);
+    const payload = await response.json();
+    if (!payload.state) return;
+
+    const incoming = await decryptState(mergeState(defaultState(), payload.state));
+    const incomingHash = stateHash(incoming);
+    if (incomingHash === lastAwsStateHash || incomingHash === stateHash(state)) return;
+
+    state = mergeState(defaultState(), incoming);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(serializeStateForStorage(state)));
+    lastAwsStateHash = incomingHash;
+    if (activePage === "inbox") markSelectedConversationSeen();
+    renderShell();
+    renderPage();
+  } catch (error) {
+    console.warn("Realtime chat sync failed", error);
+  }
+}
+
 async function syncStateToAws() {
   if (!isAwsEnabled()) return;
+  awsSyncTimer = null;
 
   try {
     const response = await fetch(`${PINGLO_AWS_API_URL}/state`, {
@@ -229,12 +395,31 @@ async function syncStateToAws() {
         "content-type": "application/json",
         "x-user-id": getAwsUserId()
       },
-      body: JSON.stringify({ state })
+      body: JSON.stringify({ state: serializeStateForStorage(state) })
     });
 
     if (!response.ok) throw new Error(`State save failed: ${response.status}`);
+    markSyncingMessages("synced");
+    lastAwsStateHash = stateHash(state);
   } catch (error) {
+    markSyncingMessages("failed");
     console.warn("AWS state save failed; local state is still saved", error);
+  }
+}
+
+function markSyncingMessages(status) {
+  let changed = false;
+  (state.conversations || []).forEach((conversation) => {
+    (conversation.messages || []).forEach((message) => {
+      if (message.authorId === state.profile.id && message.status === "syncing") {
+        message.status = status;
+        changed = true;
+      }
+    });
+  });
+  if (changed) {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(serializeStateForStorage(state)));
+    if (activePage === "inbox") renderPage();
   }
 }
 
@@ -248,6 +433,133 @@ function getAwsUserId() {
   const userId = stored || (profileId && profileId !== "me" ? profileId : makeId("user"));
   localStorage.setItem(PINGLO_AWS_USER_ID_KEY, userId);
   return userId;
+}
+
+function serializeStateForStorage(sourceState) {
+  return {
+    ...sourceState,
+    conversations: (sourceState.conversations || []).map((conversation) => ({
+      ...conversation,
+      messages: (conversation.messages || []).map((message) => {
+        if (!message.ciphertext) return message;
+        const { text, ...storedMessage } = message;
+        return {
+          ...storedMessage,
+          secure: true
+        };
+      })
+    }))
+  };
+}
+
+async function decryptState(sourceState) {
+  const conversations = await Promise.all((sourceState.conversations || []).map(async (conversation) => ({
+    ...conversation,
+    messages: await Promise.all((conversation.messages || []).map(decryptMessage))
+  })));
+  return {
+    ...sourceState,
+    conversations
+  };
+}
+
+async function secureExistingMessages() {
+  let changed = false;
+  for (const conversation of state.conversations || []) {
+    for (const message of conversation.messages || []) {
+      if (!message.ciphertext && message.text) {
+        message.ciphertext = await encryptChatText(message.text);
+        message.secure = Boolean(message.ciphertext);
+        changed = changed || Boolean(message.ciphertext);
+      }
+    }
+  }
+  if (changed) saveState();
+}
+
+async function encryptChatText(text) {
+  if (!window.crypto?.subtle || !text) return null;
+  try {
+    const key = await getChatCryptoKey();
+    const iv = crypto.getRandomValues(new Uint8Array(12));
+    const encoded = new TextEncoder().encode(text);
+    const encrypted = await crypto.subtle.encrypt({ name: "AES-GCM", iv }, key, encoded);
+    return {
+      algorithm: "AES-GCM",
+      iv: bytesToBase64(iv),
+      data: bytesToBase64(new Uint8Array(encrypted))
+    };
+  } catch (error) {
+    console.warn("Message encryption failed; storing plain text fallback", error);
+    return null;
+  }
+}
+
+async function decryptMessage(message) {
+  if (!message?.ciphertext || message.text) return message;
+  try {
+    const key = await getChatCryptoKey();
+    const iv = base64ToBytes(message.ciphertext.iv);
+    const data = base64ToBytes(message.ciphertext.data);
+    const decrypted = await crypto.subtle.decrypt({ name: "AES-GCM", iv }, key, data);
+    return {
+      ...message,
+      text: new TextDecoder().decode(decrypted),
+      secure: true
+    };
+  } catch (error) {
+    console.warn("Message decryption failed", error);
+    return {
+      ...message,
+      text: "Encrypted message unavailable on this device",
+      secure: true,
+      decryptionFailed: true
+    };
+  }
+}
+
+async function getChatCryptoKey() {
+  const secret = getOrCreateChatSecret();
+  const material = await crypto.subtle.importKey(
+    "raw",
+    new TextEncoder().encode(secret),
+    "PBKDF2",
+    false,
+    ["deriveKey"]
+  );
+  const salt = new TextEncoder().encode(`pinglo:${getAwsUserId()}`);
+  return crypto.subtle.deriveKey(
+    { name: "PBKDF2", salt, iterations: 120000, hash: "SHA-256" },
+    material,
+    { name: "AES-GCM", length: 256 },
+    false,
+    ["encrypt", "decrypt"]
+  );
+}
+
+function getOrCreateChatSecret() {
+  const stored = localStorage.getItem(PINGLO_CHAT_SECRET_KEY);
+  if (stored) return stored;
+  const bytes = crypto.getRandomValues(new Uint8Array(32));
+  const secret = bytesToBase64(bytes);
+  localStorage.setItem(PINGLO_CHAT_SECRET_KEY, secret);
+  return secret;
+}
+
+function bytesToBase64(bytes) {
+  let binary = "";
+  bytes.forEach((byte) => {
+    binary += String.fromCharCode(byte);
+  });
+  return btoa(binary);
+}
+
+function base64ToBytes(value) {
+  return Uint8Array.from(atob(value || ""), (char) => char.charCodeAt(0));
+}
+
+function stateHash(value) {
+  return JSON.stringify(serializeStateForStorage(value));
 }
 
 async function createAwsUpload(file) {
@@ -294,7 +606,7 @@ async function createAwsUpload(file) {
 
 function getRouteFromHash() {
   const route = location.hash.replace("#", "");
-  return ["home", "feed", "inbox", "search", "settings"].includes(route) ? route : "";
+  return ["home", "feed", "inbox", "search", "profile", "settings"].includes(route) ? route : "";
 }
 
 function navigate(route) {
@@ -344,6 +656,7 @@ function renderPage() {
     feed: renderFeed,
     inbox: renderInbox,
     search: renderSearch,
+    profile: renderProfilePage,
     settings: renderSettings
   };
   root.innerHTML = views[activePage]();
@@ -449,8 +762,15 @@ function statCard(value, label) {
 
 function renderFeed() {
   const filteredPosts = state.posts
-    .filter((post) => feedFilter === "all" || post.audience === feedFilter)
+    .filter((post) => {
+      if (isContentRestricted(post)) return false;
+      if (feedFilter === "all" || feedFilter === "fyp") return true;
+      if (feedFilter === "ads") return false;
+      return post.audience === feedFilter;
+    })
     .sort((a, b) => b.createdAt - a.createdAt);
+  const videos = filteredVideos();
+  const ads = approvedAds();
 
   return `
     <section class="page">
@@ -462,9 +782,11 @@ function renderFeed() {
         <div class="row-actions">
           <div class="segmented" role="tablist" aria-label="Feed filters">
             ${feedTab("all", "All")}
+            ${feedTab("fyp", "FYP")}
             ${feedTab("following", "Following")}
             ${feedTab("groups", "Groups")}
-            ${feedTab("popular", "Popular")}
+            ${feedTab("videos", "Videos")}
+            ${feedTab("ads", "Ads")}
           </div>
           <button class="solid-button" type="button" data-action="new-post"><span data-icon="plus"></span>Post</button>
         </div>
@@ -474,7 +796,7 @@ function renderFeed() {
         <div class="settings-stack">
           <article class="panel composer-card">
             <div class="composer-inline">
-              ${renderAvatar(state.profile.name || "Pinglo", "avatar-small", state.profile.iconId)}
+              ${renderAvatar(state.profile.name || "Pinglo", "avatar-small", state.profile.iconId, state.profile.picture)}
               <button class="input-shell" type="button" data-action="new-post">
                 <span data-icon="message"></span>
                 <span class="muted">Share an update</span>
@@ -482,7 +804,10 @@ function renderFeed() {
               <button class="solid-button" type="button" data-action="new-post">Compose</button>
             </div>
           </article>
-          ${filteredPosts.length ? filteredPosts.map(renderPostCard).join("") : emptyState("feed", "No posts yet", "Create the first update for your feed.")}
+          ${feedFilter === "ads" ? renderAdsSection(ads) : ""}
+          ${feedFilter === "videos" || feedFilter === "fyp" ? renderFypSection(videos) : ""}
+          ${feedFilter !== "videos" && feedFilter !== "ads" && ads.length ? renderInlineAd(ads[0]) : ""}
+          ${feedFilter !== "videos" && feedFilter !== "ads" ? (filteredPosts.length ? filteredPosts.map(renderPostCard).join("") : emptyState("feed", "No posts yet", "Create the first update for your feed.")) : ""}
         </div>
 
         <aside class="panel">
@@ -494,8 +819,12 @@ function renderFeed() {
           </div>
           <div class="panel-body">
             ${statCard(state.posts.length, "Total posts")}
+            ${statCard(state.videos.length, "Videos")}
+            ${statCard(ads.length, "Active ads")}
             ${statCard(totalLikes(), "Likes")}
             ${statCard(totalComments(), "Comments")}
+            <button class="option-row" type="button" data-action="upload-video"><span><span data-icon="video"></span> Upload video</span><span data-icon="chevron"></span></button>
+            <button class="option-row" type="button" data-action="create-ad"><span><span data-icon="sparkles"></span> Promote content</span><span data-icon="chevron"></span></button>
           </div>
         </aside>
       </div>
@@ -509,12 +838,13 @@ function feedTab(value, label) {
 
 function renderPostCard(post) {
   const comments = post.comments || [];
+  const author = getPersonById(post.authorId) || state.profile;
   return `
     <article class="post-card" data-post-id="${post.id}">
       <div class="post-head">
-        ${renderAvatar(post.authorName, "avatar-small", getAuthorIconId(post.authorId, post.authorIconId))}
+        ${renderAvatar(post.authorName, "avatar-small", getAuthorIconId(post.authorId, post.authorIconId), getAuthorPicture(post.authorId))}
         <div class="list-main">
-          <strong>${escapeHtml(post.authorName)}</strong>
+          <strong>${escapeHtml(post.authorName)} ${badgeMarkup(author)}</strong>
           <span class="micro">${timeAgo(post.createdAt)} - ${escapeHtml(labelForAudience(post.audience))}</span>
         </div>
       </div>
@@ -528,6 +858,9 @@ function renderPostCard(post) {
         </button>
         <button class="soft-button" type="button" data-action="share-post" data-post-id="${post.id}">
           <span data-icon="share"></span>Share
+        </button>
+        <button class="soft-button" type="button" data-action="report-content" data-content-id="${post.id}" data-content-type="post">
+          <span data-icon="flag"></span>Report
         </button>
       </div>
       <form class="comment-form" data-post-id="${post.id}">
@@ -543,7 +876,7 @@ function renderPostCard(post) {
 function renderComment(comment) {
   return `
     <div class="list-card">
-      ${renderAvatar(comment.authorName, "avatar-small", getAuthorIconId(comment.authorId, comment.authorIconId))}
+      ${renderAvatar(comment.authorName, "avatar-small", getAuthorIconId(comment.authorId, comment.authorIconId), getAuthorPicture(comment.authorId))}
       <div class="list-main">
         <strong>${escapeHtml(comment.authorName)}</strong>
         <span class="muted">${escapeHtml(comment.text)}</span>
@@ -556,6 +889,8 @@ function renderComment(comment) {
 function renderInbox() {
   const conversations = sortedConversations();
   const selected = getSelectedConversation(conversations);
+  if (selected && state.activeConversationId !== selected.id) state.activeConversationId = selected.id;
+  if (selected && markSelectedConversationSeen()) saveState();
 
   return `
     <section class="chat-layout">
@@ -611,10 +946,15 @@ function renderChatWindow(conversation) {
       <span class="avatar" style="background:${avatarGradient(conversation.name)}">${conversationAvatar(conversation)}</span>
       <div class="chat-title">
         <h2 class="truncate">${escapeHtml(conversation.name)}</h2>
-        <span class="muted">${conversation.type === "group" ? `${conversation.members.length} members` : "Direct chat"}</span>
+        <span class="muted">${conversation.type === "group" ? `${conversation.members.length} members` : "Direct chat"} - secure encrypted chat</span>
       </div>
       <button class="icon-button" type="button" data-action="chat-details" aria-label="Chat details"><span data-icon="menu"></span></button>
     </header>
+
+    <div class="secure-chat-banner">
+      <span data-icon="shield"></span>
+      <span>Messages in this chat are secure and encrypted on this device.</span>
+    </div>
 
     <div class="message-list" data-message-list>
       ${messages.length ? messages.map((message) => renderMessage(message)).join("") : emptyState("message", "No messages yet", "Send the first ping in this conversation.")}
@@ -637,19 +977,99 @@ function renderChatWindow(conversation) {
 
 function renderMessage(message) {
   const mine = message.authorId === state.profile.id;
+  const messageText = message.text || "Encrypted message";
   const attachment = message.attachment
     ? `<span class="count-pill"><span data-icon="paperclip"></span>${escapeHtml(message.attachment.name)}</span>`
     : "";
   return `
     <div class="message-row ${mine ? "mine" : ""}">
-      ${renderAvatar(message.authorName, "avatar-small", getAuthorIconId(message.authorId, message.authorIconId))}
+      ${renderAvatar(message.authorName, "avatar-small", getAuthorIconId(message.authorId, message.authorIconId), getAuthorPicture(message.authorId))}
       <div class="message-bubble">
         ${!mine ? `<strong>${escapeHtml(message.authorName)}</strong>` : ""}
-        <span>${escapeHtml(message.text)}</span>
+        <span>${escapeHtml(messageText)}</span>
         ${attachment}
-        <span class="message-time">${formatTime(message.createdAt)} - ${message.status || "sent"}</span>
+        <span class="message-time">
+          <span data-icon="${message.secure ? "shield" : "lock"}"></span>
+          ${formatTime(message.createdAt)} - ${message.secure ? "encrypted" : "secure"} - ${messageStatusText(message)}
+        </span>
       </div>
     </div>
+  `;
+}
+
+function renderFypSection(videos) {
+  return `
+    <article class="panel">
+      <div class="panel-header">
+        <div>
+          <p class="eyebrow">For You</p>
+          <h2>FYP Videos</h2>
+        </div>
+        <button class="solid-button" type="button" data-action="upload-video"><span data-icon="video"></span>Upload</button>
+      </div>
+      <div class="video-grid">
+        ${videos.length ? videos.map(renderVideoCard).join("") : emptyState("video", "No videos yet", "Upload a video to seed the FYP.")}
+      </div>
+    </article>
+  `;
+}
+
+function renderVideoCard(video) {
+  return `
+    <article class="video-card" data-video-id="${video.id}">
+      <div class="video-frame">
+        ${video.url ? `<video src="${escapeAttribute(video.url)}" controls playsinline></video>` : `<span data-icon="video"></span>`}
+      </div>
+      <div class="video-meta">
+        <strong>${escapeHtml(video.title)} ${badgeMarkup(getPersonById(video.authorId) || state.profile)}</strong>
+        <span class="muted">${escapeHtml(video.authorName)} - ${timeAgo(video.createdAt)}</span>
+      </div>
+      <div class="post-actions">
+        <button class="soft-button" type="button" data-action="follow-user" data-user-id="${escapeAttribute(video.authorId)}"><span data-icon="userPlus"></span>${isFollowing(video.authorId) ? "Unfollow" : "Follow"}</button>
+        <button class="soft-button" type="button" data-action="report-content" data-content-id="${video.id}" data-content-type="video"><span data-icon="flag"></span>Report</button>
+      </div>
+    </article>
+  `;
+}
+
+function renderAdsSection(ads) {
+  return `
+    <article class="panel">
+      <div class="panel-header">
+        <div>
+          <p class="eyebrow">Ads</p>
+          <h2>Promotions</h2>
+        </div>
+        <button class="solid-button" type="button" data-action="create-ad"><span data-icon="sparkles"></span>Create ad</button>
+      </div>
+      <div class="settings-stack">
+        ${ads.length ? ads.map(renderAdCard).join("") : emptyState("sparkles", "No active ads", "Create a promotion and prepare it for H.E.M Pay checkout.")}
+      </div>
+    </article>
+  `;
+}
+
+function renderInlineAd(ad) {
+  return `<div class="ad-slot">${renderAdCard(ad)}</div>`;
+}
+
+function renderAdCard(ad) {
+  return `
+    <article class="ad-card">
+      <div class="result-head">
+        <span class="avatar avatar-small" style="background:${avatarGradient(ad.title)}"><span data-icon="sparkles"></span></span>
+        <div class="list-main">
+          <strong>${escapeHtml(ad.title)}</strong>
+          <span class="micro">Sponsored - ${escapeHtml(ad.status || "draft")}</span>
+        </div>
+        <span class="count-pill">${formatMoney(ad.budget || 0, state.billing.currency)}</span>
+      </div>
+      <p class="muted">${escapeHtml(ad.copy)}</p>
+      <div class="post-actions">
+        <button class="soft-button" type="button" data-action="pay-ad" data-ad-id="${ad.id}"><span data-icon="card"></span>Pay to promote</button>
+        <button class="soft-button" type="button" data-action="report-content" data-content-id="${ad.id}" data-content-type="ad"><span data-icon="flag"></span>Report</button>
+      </div>
+    </article>
   `;
 }
 
@@ -678,6 +1098,10 @@ function renderChatInfo(conversation) {
       <div class="option-row">
         <span><span data-icon="file"></span> Files</span>
         <span class="count-pill">${fileCount(conversation)}</span>
+      </div>
+      <div class="option-row secure-option">
+        <span><span data-icon="shield"></span> Secure encrypted chat</span>
+        <span class="count-pill">On</span>
       </div>
       <button class="danger-button" type="button" data-action="delete-chat" data-conversation-id="${conversation.id}">Delete chat</button>
     </div>
@@ -751,6 +1175,83 @@ function renderSearchResults(results, query) {
     .join("");
 }
 
+function renderProfilePage() {
+  const profile = normalizeProfile(state.profile);
+  const people = state.people.filter((person) => person.id !== profile.id);
+  return `
+    <section class="page">
+      <div class="profile-page">
+        <article class="panel profile-hero">
+          <div class="profile-hero-main">
+            ${renderAvatar(profile.name || "Pinglo User", "avatar-large", profile.iconId, profile.picture)}
+            <div class="list-main">
+              <p class="eyebrow">Profile</p>
+              <h1>${escapeHtml(profile.name || "Set up profile")} ${badgeMarkup(profile)}</h1>
+              <p class="muted">${escapeHtml(profile.handle || "@you")} - ${escapeHtml(profile.bio || "Add a bio and build your Pinglo presence.")}</p>
+              <div class="tag-row">
+                <span class="count-pill">${profile.followers || 0} followers</span>
+                <span class="count-pill">${profile.following || 0} following</span>
+                <span class="count-pill">${accountTypeLabel(profile.accountType)}</span>
+              </div>
+            </div>
+          </div>
+          <div class="row-actions">
+            <button class="solid-button" type="button" data-action="edit-profile"><span data-icon="settings"></span>Edit</button>
+            <button class="soft-button" type="button" data-action="plans-modal"><span data-icon="badge"></span>Plans</button>
+          </div>
+        </article>
+
+        <div class="setting-grid">
+          <article class="panel">
+            <div class="panel-header">
+              <div>
+                <p class="eyebrow">People</p>
+                <h2>Suggested people</h2>
+              </div>
+            </div>
+            <div class="panel-body">
+              ${people.map(renderPersonCard).join("")}
+            </div>
+          </article>
+
+          <article class="panel">
+            <div class="panel-header">
+              <div>
+                <p class="eyebrow">Safety</p>
+                <h2>Account controls</h2>
+              </div>
+            </div>
+            <div class="panel-body">
+              <button class="option-row" type="button" data-action="moderation-center"><span><span data-icon="shield"></span> Moderation center</span><span class="count-pill">${state.moderationQueue.length}</span></button>
+              <button class="option-row" type="button" data-action="appeal-account"><span><span data-icon="flag"></span> Appeal status</span><span data-icon="chevron"></span></button>
+              <div class="option-row"><span><span data-icon="block"></span> Blocked accounts</span><span class="count-pill">${state.social.blocked.length}</span></div>
+              <div class="option-row"><span><span data-icon="shield"></span> Auto safety</span><span class="count-pill">On</span></div>
+            </div>
+          </article>
+        </div>
+      </div>
+    </section>
+  `;
+}
+
+function renderPersonCard(person) {
+  const blocked = isBlocked(person.id);
+  return `
+    <div class="list-card person-card">
+      ${renderAvatar(person.name, "avatar-small", person.iconId, person.picture)}
+      <span class="list-main">
+        <strong>${escapeHtml(person.name)} ${badgeMarkup(person)}</strong>
+        <span class="muted truncate">${escapeHtml(person.handle)} - ${escapeHtml(person.bio || "Pinglo account")}</span>
+      </span>
+      <span class="row-actions">
+        <button class="soft-button" type="button" data-action="follow-user" data-user-id="${person.id}">${isFollowing(person.id) ? "Unfollow" : "Follow"}</button>
+        <button class="soft-button" type="button" data-action="block-user" data-user-id="${person.id}">${blocked ? "Unblock" : "Block"}</button>
+        <button class="soft-button" type="button" data-action="report-user" data-user-id="${person.id}"><span data-icon="flag"></span></button>
+      </span>
+    </div>
+  `;
+}
+
 function renderSettings() {
   return `
     <section class="page">
@@ -765,7 +1266,7 @@ function renderSettings() {
         <div class="settings-stack">
           <article class="panel">
             <button class="settings-profile option-row" type="button" data-action="edit-profile">
-              ${renderAvatar(state.profile.name || "Pinglo", "avatar-large", state.profile.iconId)}
+              ${renderAvatar(state.profile.name || "Pinglo", "avatar-large", state.profile.iconId, state.profile.picture)}
               <span class="list-main">
                 <strong>${escapeHtml(state.profile.name || "Set up profile")}</strong>
                 <span class="muted">${escapeHtml(state.profile.handle || "Add your handle")}</span>
@@ -784,6 +1285,8 @@ function renderSettings() {
             <div class="panel-body">
               <button class="option-row" type="button" data-action="edit-profile"><span><span data-icon="userPlus"></span> Account Information</span><span data-icon="chevron"></span></button>
               <button class="option-row" type="button" data-action="privacy-modal"><span><span data-icon="shield"></span> Privacy & Security</span><span data-icon="chevron"></span></button>
+              <button class="option-row" type="button" data-action="plans-modal"><span><span data-icon="badge"></span> Pinglo plans</span><span class="muted">${accountTypeLabel(state.profile.accountType)}</span></button>
+              <button class="option-row" type="button" data-action="payment-modal"><span><span data-icon="card"></span> H.E.M Pay</span><span class="muted">${HEM_PAY_PROVIDER}</span></button>
               <label class="option-row"><span><span data-icon="bell"></span> Notifications</span>${switchMarkup("notifications", state.preferences.notifications)}</label>
               <div class="option-row"><span><span data-icon="palette"></span> Theme</span><span class="muted">${themeName()}</span></div>
             </div>
@@ -819,7 +1322,22 @@ function renderSettings() {
               <label class="option-row"><span><span data-icon="message"></span> Message previews</span>${switchMarkup("messagePreview", state.preferences.messagePreview)}</label>
               <label class="option-row"><span><span data-icon="feed"></span> Compact layout</span>${switchMarkup("compactMode", state.preferences.compactMode)}</label>
               <label class="option-row"><span><span data-icon="shield"></span> Read receipts</span>${switchMarkup("readReceipts", state.preferences.readReceipts)}</label>
+              <label class="option-row"><span><span data-icon="shield"></span> Pinglo Kids filtered feed</span>${switchMarkup("kidsFilteredFeed", state.preferences.kidsFilteredFeed)}</label>
               <button class="option-row" type="button" data-action="language-modal"><span><span data-icon="globe"></span> Language</span><span class="muted">${escapeHtml(state.preferences.language)}</span></button>
+            </div>
+          </article>
+
+          <article class="panel">
+            <div class="panel-header">
+              <div>
+                <p class="eyebrow">Creator Tools</p>
+                <h2>Growth</h2>
+              </div>
+            </div>
+            <div class="panel-body">
+              <button class="option-row" type="button" data-action="upload-video"><span><span data-icon="video"></span> Upload FYP video</span><span data-icon="chevron"></span></button>
+              <button class="option-row" type="button" data-action="create-ad"><span><span data-icon="sparkles"></span> Promote content</span><span data-icon="chevron"></span></button>
+              <button class="option-row" type="button" data-action="gift-card-modal"><span><span data-icon="card"></span> Gift card codes</span><span class="count-pill">${state.billing.giftCards.length}</span></button>
             </div>
           </article>
 
@@ -895,6 +1413,20 @@ function bindPageEvents() {
   if (messageList) messageList.scrollTop = messageList.scrollHeight;
 }
 
+function persistSignedInProfile() {
+  const account = getSignedInAccount();
+  if (!account && !state.profile.email) return;
+  const profile = {
+    ...(account || {}),
+    ...state.profile,
+    username: normalizeHandle(state.profile.handle) || state.profile.username
+  };
+  localStorage.setItem("pinglo_account", JSON.stringify(profile));
+  if (profile.email) {
+    localStorage.setItem(`pinglo:account:${String(profile.email).trim().toLowerCase()}`, JSON.stringify(profile));
+  }
+}
+
 function handleAction(event) {
   const target = event.currentTarget;
   const action = target.dataset.action;
@@ -902,6 +1434,19 @@ function handleAction(event) {
   if (action === "new-chat") openConversationModal("direct");
   if (action === "new-group") openConversationModal("group");
   if (action === "new-post") openPostModal();
+  if (action === "upload-video") openVideoModal();
+  if (action === "create-ad") openAdModal();
+  if (action === "plans-modal") openPlansModal();
+  if (action === "payment-modal") openPaymentModal();
+  if (action === "gift-card-modal") openGiftCardModal();
+  if (action === "select-plan") selectPlan(target.dataset.planId);
+  if (action === "moderation-center") openModerationModal();
+  if (action === "appeal-account") openAppealModal();
+  if (action === "follow-user") toggleFollow(target.dataset.userId);
+  if (action === "block-user") toggleBlock(target.dataset.userId);
+  if (action === "report-user") openReportModal("account", target.dataset.userId);
+  if (action === "report-content") openReportModal(target.dataset.contentType, target.dataset.contentId);
+  if (action === "pay-ad") prepareAdPayment(target.dataset.adId);
   if (action === "invite") copyInviteLink();
   if (action === "set-feed-filter") {
     feedFilter = target.dataset.filter;
@@ -917,7 +1462,7 @@ function handleAction(event) {
   if (action === "set-theme") setTheme(target.dataset.themeValue);
   if (action === "privacy-modal") openSimpleModal("Privacy & Security", privacyContent());
   if (action === "language-modal") openLanguageModal();
-  if (action === "about-modal") openSimpleModal("About Pinglo", "Pinglo keeps this frontend clean and local-first. Connect it to your preferred backend when you are ready for real-time multi-user delivery.");
+  if (action === "about-modal") openSimpleModal("About Pinglo", "Pinglo is H.E.M. Africa's secure social app for encrypted chats, FYP videos, creators, families, and communities. Account data syncs through the Pinglo AWS backend when configured.");
   if (action === "support-modal") openSimpleModal("Help & Support", "For production support, connect this form to your help desk or email routing service.");
   if (action === "export-data") exportData();
   if (action === "import-data") root.querySelector("[data-import-input]")?.click();
@@ -941,6 +1486,13 @@ function handleAction(event) {
       saveState();
       navigate("inbox");
     }
+  }
+  if (action === "open-profile-result") {
+    toggleFollow(target.dataset.id);
+  }
+  if (action === "open-video-result") {
+    feedFilter = "videos";
+    navigate("feed");
   }
 }
 
@@ -973,10 +1525,14 @@ function openProfileModal(required) {
           ${["Online", "Focus", "Away", "Offline"].map((status) => `<option ${state.profile.status === status ? "selected" : ""}>${status}</option>`).join("")}
         </select>
       </label>
+      <label class="field">
+        <span>Bio</span>
+        <textarea name="bio" maxlength="180" placeholder="Tell people what you do">${escapeHtml(state.profile.bio || "")}</textarea>
+      </label>
       <div class="field">
         <span>Profile icon</span>
         <div class="profile-icon-preview">
-          ${renderAvatar(state.profile.name || "Pinglo", "avatar-large", state.profile.iconId)}
+          ${renderAvatar(state.profile.name || "Pinglo", "avatar-large", state.profile.iconId, state.profile.picture)}
           <span class="muted">Choose one of ${PROFILE_ICONS.length} icons</span>
         </div>
         <input type="hidden" name="iconId" value="${escapeAttribute(state.profile.iconId || "chat-sky")}" />
@@ -998,9 +1554,13 @@ function openProfileModal(required) {
     state.profile.name = name;
     state.profile.handle = cleanHandle(data.get("handle"), name);
     state.profile.status = data.get("status");
+    state.profile.bio = clean(data.get("bio"));
     state.profile.initials = getInitials(name);
     state.profile.iconId = data.get("iconId") || "chat-sky";
+    if (state.profile.picture) state.profile.iconId = "";
+    state.profile = normalizeProfile(state.profile);
     saveState();
+    persistSignedInProfile();
     closeModal();
     renderPage();
     toast("Profile saved");
@@ -1124,6 +1684,7 @@ function openPostModal() {
       <label class="field">
         <span>Audience</span>
         <select name="audience">
+          <option value="fyp">FYP</option>
           <option value="following">Following</option>
           <option value="groups">Groups</option>
           <option value="popular">Public</option>
@@ -1162,6 +1723,191 @@ function openPostModal() {
     renderPage();
     toast("Post published");
   });
+}
+
+function openVideoModal() {
+  openModal(`
+    <div class="modal-head">
+      <div>
+        <p class="eyebrow">FYP</p>
+        <h2>Upload video</h2>
+      </div>
+      ${closeButton()}
+    </div>
+    <form class="form-grid" data-form="video">
+      <label class="field">
+        <span>Title</span>
+        <input name="title" required maxlength="80" placeholder="Video title" />
+      </label>
+      <label class="field">
+        <span>Caption</span>
+        <textarea name="caption" maxlength="220" placeholder="What is happening?"></textarea>
+      </label>
+      <label class="field">
+        <span>Video file</span>
+        <input name="video" type="file" accept="video/*" />
+      </label>
+      <div class="form-actions">
+        <button class="ghost-button" type="button" data-modal-close>Cancel</button>
+        <button class="solid-button" type="submit">Publish to FYP</button>
+      </div>
+    </form>
+  `);
+
+  modalRoot.querySelector("[data-form='video']").addEventListener("submit", (event) => {
+    event.preventDefault();
+    const data = new FormData(event.currentTarget);
+    const file = data.get("video");
+    const url = file && file.size ? URL.createObjectURL(file) : "";
+    const video = {
+      id: makeId("video"),
+      title: clean(data.get("title")),
+      caption: clean(data.get("caption")),
+      url,
+      fileName: file?.name || "",
+      authorId: state.profile.id,
+      authorName: state.profile.name || "Pinglo User",
+      status: "published",
+      moderationStatus: "active",
+      createdAt: Date.now()
+    };
+    state.videos.unshift(video);
+    saveState();
+    closeModal();
+    feedFilter = "videos";
+    navigate("feed");
+    toast("Video added to FYP");
+  });
+}
+
+function openAdModal() {
+  openModal(`
+    <div class="modal-head">
+      <div>
+        <p class="eyebrow">Promotions</p>
+        <h2>Create ad</h2>
+      </div>
+      ${closeButton()}
+    </div>
+    <form class="form-grid" data-form="ad">
+      <label class="field">
+        <span>Campaign title</span>
+        <input name="title" required maxlength="80" placeholder="Promote my post" />
+      </label>
+      <label class="field">
+        <span>Ad copy</span>
+        <textarea name="copy" required maxlength="220" placeholder="Tell people why they should engage"></textarea>
+      </label>
+      <label class="field">
+        <span>Budget</span>
+        <input name="budget" type="number" min="1000" step="500" value="4999" />
+      </label>
+      <div class="form-actions">
+        <button class="ghost-button" type="button" data-modal-close>Cancel</button>
+        <button class="solid-button" type="submit">Prepare checkout</button>
+      </div>
+    </form>
+  `);
+
+  modalRoot.querySelector("[data-form='ad']").addEventListener("submit", (event) => {
+    event.preventDefault();
+    const data = new FormData(event.currentTarget);
+    const ad = {
+      id: makeId("ad"),
+      title: clean(data.get("title")),
+      copy: clean(data.get("copy")),
+      budget: Number(data.get("budget") || 0),
+      status: "awaiting_payment",
+      paymentProvider: HEM_PAY_PROVIDER,
+      authorId: state.profile.id,
+      createdAt: Date.now()
+    };
+    state.ads.unshift(ad);
+    saveState();
+    closeModal();
+    feedFilter = "ads";
+    navigate("feed");
+    openPaymentModal("ad", ad.id);
+  });
+}
+
+function openPlansModal() {
+  openModal(`
+    <div class="modal-head">
+      <div>
+        <p class="eyebrow">Pinglo Plans</p>
+        <h2>Account types</h2>
+      </div>
+      ${closeButton()}
+    </div>
+    <div class="plan-grid">
+      ${renderPlanCard("standard", "Pinglo Standard", "Free", "Chat, post, follow, report, and use secure messaging.", false)}
+      ${renderPlanCard("premium", "Pinglo Premium", "Free verification tools", "Includes the blue verification badge for eligible accounts.", false)}
+      ${renderPlanCard("kids", "Pinglo Kids", `$${PINGLO_KIDS_PRICE_USD} / ${PINGLO_KIDS_PRICE_NGN} NGN`, "Paid child-safe account with filtered feed, safer discovery, and stricter moderation.", true)}
+    </div>
+    <div class="form-actions">
+      <button class="ghost-button" type="button" data-action="gift-card-modal">Gift cards</button>
+      <button class="solid-button" type="button" data-action="payment-modal">Open H.E.M Pay</button>
+    </div>
+  `);
+  modalRoot.querySelectorAll("[data-action]").forEach((button) => button.addEventListener("click", handleAction));
+}
+
+function renderPlanCard(id, name, price, copy, paid) {
+  return `
+    <article class="plan-card ${state.profile.accountType === id ? "is-active" : ""}">
+      <div class="plan-card-head">
+        <h3>${escapeHtml(name)} ${id === "premium" ? badgeMarkup({ badges: ["verified"] }) : ""}</h3>
+        <span class="count-pill">${paid ? "Paid" : "Included"}</span>
+      </div>
+      <strong>${escapeHtml(price)}</strong>
+      <p class="muted">${escapeHtml(copy)}</p>
+      <button class="solid-button" type="button" data-plan-id="${id}" data-action="select-plan">${id === "kids" ? "Prepare payment" : "Choose plan"}</button>
+    </article>
+  `;
+}
+
+function openPaymentModal(context = "plan", itemId = "") {
+  const selectedPlan = state.billing.selectedPlan || state.profile.accountType || "standard";
+  openModal(`
+    <div class="modal-head">
+      <div>
+        <p class="eyebrow">H.E.M Pay</p>
+        <h2>Payment ready</h2>
+      </div>
+      ${closeButton()}
+    </div>
+    <div class="payment-panel">
+      <div class="option-row">
+        <span><span data-icon="card"></span> Checkout appearance</span>
+        <strong>H.E.M Pay</strong>
+      </div>
+      <div class="option-row">
+        <span><span data-icon="globe"></span> Payment backend</span>
+        <strong>${HEM_PAY_PROVIDER}</strong>
+      </div>
+      <div class="option-row">
+        <span><span data-icon="shield"></span> Context</span>
+        <span class="count-pill">${escapeHtml(context)} ${escapeHtml(itemId)}</span>
+      </div>
+      <p class="muted">Checkout is branded as H.E.M Pay. Add live payment keys, transaction references, callback URLs, and webhook verification before enabling real charges.</p>
+    </div>
+    <form class="form-grid" data-form="gift-card">
+      <label class="field">
+        <span>Gift card code</span>
+        <input name="code" placeholder="PINGLO-KIDS-..." autocomplete="off" />
+      </label>
+      <div class="form-actions">
+        <button class="ghost-button" type="button" data-modal-close>Close</button>
+        <button class="solid-button" type="submit">Redeem</button>
+      </div>
+    </form>
+  `);
+  modalRoot.querySelector("[data-form='gift-card']").addEventListener("submit", redeemGiftCard);
+}
+
+function openGiftCardModal() {
+  openSimpleModal("Gift card codes", PINGLO_GIFT_CARD_CODES.map((card) => `${card.code} - ${formatMoney(card.value, card.currency)} ${card.tier}`).join("\n"));
 }
 
 function openLanguageModal() {
@@ -1232,7 +1978,7 @@ function closeModal() {
   modalRoot.innerHTML = "";
 }
 
-function handleMessageSubmit(event) {
+async function handleMessageSubmit(event) {
   event.preventDefault();
   const form = event.currentTarget;
   const input = form.elements.message;
@@ -1241,19 +1987,24 @@ function handleMessageSubmit(event) {
 
   const conversation = state.conversations.find((item) => item.id === form.dataset.conversationId);
   if (!conversation) return;
+  const ciphertext = await encryptChatText(text || pendingAttachment?.name || "Attachment");
+  const messageId = makeId("msg");
 
   conversation.messages.push({
-    id: makeId("msg"),
+    id: messageId,
     authorId: state.profile.id,
     authorName: state.profile.name || "Pinglo User",
     authorIconId: state.profile.iconId,
     text: text || pendingAttachment?.name || "Attachment",
+    ciphertext,
     attachment: pendingAttachment,
-    status: state.preferences.readReceipts ? "delivered" : "sent",
+    status: isAwsEnabled() ? "syncing" : "saved",
+    secure: Boolean(ciphertext),
     createdAt: Date.now()
   });
   conversation.updatedAt = Date.now();
   pendingAttachment = null;
+  input.value = "";
   saveState();
   renderPage();
 }
@@ -1331,6 +2082,229 @@ function openConversation(id) {
   if (conversation) conversation.unread = 0;
   saveState();
   renderPage();
+}
+
+function markSelectedConversationSeen() {
+  return false;
+}
+
+function messageStatusText(message) {
+  return {
+    syncing: "syncing",
+    synced: "synced",
+    saved: "saved",
+    failed: "not synced"
+  }[message.status] || "saved";
+}
+
+function toggleFollow(userId) {
+  if (!userId || userId === state.profile.id) return;
+  const following = new Set(state.social.following || []);
+  if (following.has(userId)) following.delete(userId);
+  else following.add(userId);
+  state.social.following = [...following];
+  state.profile.following = state.social.following.length;
+  saveState();
+  renderPage();
+  toast(following.has(userId) ? "Following account" : "Unfollowed account");
+}
+
+function toggleBlock(userId) {
+  if (!userId || userId === state.profile.id) return;
+  const blocked = new Set(state.social.blocked || []);
+  if (blocked.has(userId)) blocked.delete(userId);
+  else blocked.add(userId);
+  state.social.blocked = [...blocked];
+  saveState();
+  renderPage();
+  toast(blocked.has(userId) ? "Account blocked" : "Account unblocked");
+}
+
+function openReportModal(contentType, contentId) {
+  openModal(`
+    <div class="modal-head">
+      <div>
+        <p class="eyebrow">Safety</p>
+        <h2>Report ${escapeHtml(contentType || "content")}</h2>
+      </div>
+      ${closeButton()}
+    </div>
+    <form class="form-grid" data-form="report">
+      <label class="field">
+        <span>Reason</span>
+        <select name="reason">
+          <option value="spam">Spam or scams</option>
+          <option value="abuse">Abuse or harassment</option>
+          <option value="unsafe">Unsafe content</option>
+          <option value="impersonation">Impersonation</option>
+        </select>
+      </label>
+      <label class="field">
+        <span>Details</span>
+        <textarea name="details" maxlength="300" placeholder="Add context for review"></textarea>
+      </label>
+      <div class="form-actions">
+        <button class="ghost-button" type="button" data-modal-close>Cancel</button>
+        <button class="solid-button" type="submit">Submit report</button>
+      </div>
+    </form>
+  `);
+
+  modalRoot.querySelector("[data-form='report']").addEventListener("submit", (event) => {
+    event.preventDefault();
+    const data = new FormData(event.currentTarget);
+    const report = {
+      id: makeId("report"),
+      contentType,
+      contentId,
+      reason: data.get("reason"),
+      details: clean(data.get("details")),
+      reporterId: state.profile.id,
+      status: "auto_reviewed",
+      action: "none",
+      appealUrl: CORE_APPEALS_URL,
+      createdAt: Date.now()
+    };
+    applyAutoModeration(report);
+    state.reports.unshift(report);
+    saveState();
+    closeModal();
+    renderPage();
+    toast(report.action === "none" ? "Report submitted" : `Auto ${report.action} applied`);
+  });
+}
+
+function applyAutoModeration(report) {
+  const target = findModerationTarget(report.contentType, report.contentId);
+  const risky = ["spam", "abuse", "unsafe", "impersonation"].includes(report.reason);
+  if (!target || !risky) return;
+  const relatedReports = state.reports.filter((item) => item.contentId === report.contentId).length + 1;
+  if (report.reason === "spam" || relatedReports >= 3) {
+    target.moderationStatus = "suspended";
+    report.action = "suspend";
+  }
+  if (relatedReports >= 5) {
+    target.moderationStatus = "banned";
+    target.accountStatus = "banned";
+    report.action = "ban";
+  }
+  if (report.reason === "unsafe" || report.reason === "abuse") {
+    target.moderationStatus = "restricted";
+    report.action = "restrict";
+  }
+  if (report.reason === "impersonation") {
+    target.accountStatus = "suspended";
+    report.action = "suspend";
+  }
+  if (report.action !== "none") {
+    state.moderationQueue.unshift({
+      id: makeId("mod"),
+      reportId: report.id,
+      contentType: report.contentType,
+      contentId: report.contentId,
+      action: report.action,
+      status: "awaiting_core_review",
+      appealUrl: CORE_APPEALS_URL,
+      createdAt: Date.now()
+    });
+  }
+}
+
+function findModerationTarget(contentType, contentId) {
+  if (contentType === "post") return state.posts.find((item) => item.id === contentId);
+  if (contentType === "video") return state.videos.find((item) => item.id === contentId);
+  if (contentType === "ad") return state.ads.find((item) => item.id === contentId);
+  if (contentType === "account") return state.people.find((item) => item.id === contentId) || (state.profile.id === contentId ? state.profile : null);
+  return null;
+}
+
+function openModerationModal() {
+  openModal(`
+    <div class="modal-head">
+      <div>
+        <p class="eyebrow">Safety</p>
+        <h2>Moderation center</h2>
+      </div>
+      ${closeButton()}
+    </div>
+    <div class="settings-stack">
+      ${state.moderationQueue.length ? state.moderationQueue.map((item) => `
+        <div class="list-card">
+          <span class="avatar avatar-small" style="background:${avatarGradient(item.action)}"><span data-icon="shield"></span></span>
+          <span class="list-main">
+            <strong>${escapeHtml(item.action)} ${escapeHtml(item.contentType)}</strong>
+            <span class="muted">${escapeHtml(item.status)} - appeals route to ${CORE_APPEALS_URL}</span>
+          </span>
+        </div>
+      `).join("") : emptyState("shield", "No moderation actions", "Auto safety is ready for reports, suspensions, bans, and Core appeals.")}
+    </div>
+    <div class="form-actions">
+      <button class="solid-button" type="button" data-modal-close>Done</button>
+    </div>
+  `);
+}
+
+function openAppealModal() {
+  openSimpleModal("Appeals", `Appeals are routed to ${CORE_APPEALS_URL}. Core reviewers can manually restore accounts, content, badges, or ads from the admin panel.`);
+}
+
+function selectPlan(planId) {
+  if (!planId) return;
+  state.billing.selectedPlan = planId;
+  if (planId === "kids") {
+    state.profile.accountType = "kids_pending_payment";
+    state.preferences.kidsFilteredFeed = true;
+    saveState();
+    openPaymentModal("plan", "kids");
+    return;
+  }
+  state.profile.accountType = planId;
+  if (planId === "premium") state.profile.badges = [...new Set([...(state.profile.badges || []), "verified"])];
+  saveState();
+  closeModal();
+  renderPage();
+  toast(`${accountTypeLabel(planId)} selected`);
+}
+
+function redeemGiftCard(event) {
+  event.preventDefault();
+  const code = clean(new FormData(event.currentTarget).get("code")).toUpperCase();
+  const card = PINGLO_GIFT_CARD_CODES.find((item) => item.code === code);
+  if (!card) {
+    toast("Gift card not found");
+    return;
+  }
+  if (state.billing.redeemedGiftCards.includes(code)) {
+    toast("Gift card already redeemed");
+    return;
+  }
+  state.billing.redeemedGiftCards.push(code);
+  state.billing.payments.unshift({
+    id: makeId("pay"),
+    provider: "gift_card",
+    code,
+    value: card.value,
+    currency: card.currency,
+    tier: card.tier,
+    status: "paid",
+    createdAt: Date.now()
+  });
+  if (card.tier === "kids") {
+    state.profile.accountType = "kids";
+    state.preferences.kidsFilteredFeed = true;
+  }
+  saveState();
+  closeModal();
+  renderPage();
+  toast("Gift card redeemed");
+}
+
+function prepareAdPayment(adId) {
+  const ad = state.ads.find((item) => item.id === adId);
+  if (!ad) return;
+  ad.status = "awaiting_payment";
+  saveState();
+  openPaymentModal("ad", adId);
 }
 
 function openConversationInfo() {
@@ -1423,6 +2397,7 @@ function importData(event) {
 function clearData() {
   if (!confirm("Clear Pinglo data stored in this browser?")) return;
   localStorage.removeItem(STORAGE_KEY);
+  localStorage.removeItem(PINGLO_CHAT_SECRET_KEY);
   localStorage.removeItem("pinglo_access_token");
   localStorage.removeItem("pinglo_account");
   state = defaultState();
@@ -1447,7 +2422,7 @@ function filterChatList(value) {
       conversation.name,
       conversation.description,
       ...conversation.members.map((member) => member.name),
-      ...(conversation.messages || []).map((message) => message.text)
+      ...(conversation.messages || []).map((message) => message.text || "Encrypted message")
     ]
       .join(" ")
       .toLowerCase();
@@ -1476,12 +2451,13 @@ function searchEverything(query) {
       });
     }
     (conversation.messages || []).forEach((message) => {
-      if (message.text.toLowerCase().includes(term)) {
+      const messageText = message.text || "";
+      if (messageText.toLowerCase().includes(term)) {
         results.push({
           id: conversation.id,
           type: "Message",
           title: conversation.name,
-          preview: message.text,
+          preview: messageText,
           action: "open-result",
           button: "Open"
         });
@@ -1497,6 +2473,30 @@ function searchEverything(query) {
         preview: post.content,
         action: "noop",
         button: "Found"
+      });
+    }
+  });
+  state.people.forEach((person) => {
+    if ([person.name, person.handle, person.bio].join(" ").toLowerCase().includes(term)) {
+      results.push({
+        id: person.id,
+        type: "Account",
+        title: `${person.name} ${person.handle}`,
+        preview: person.bio || "Pinglo account",
+        action: "open-profile-result",
+        button: isFollowing(person.id) ? "Following" : "Follow"
+      });
+    }
+  });
+  state.videos.forEach((video) => {
+    if ([video.title, video.caption, video.authorName].join(" ").toLowerCase().includes(term)) {
+      results.push({
+        id: video.id,
+        type: "FYP Video",
+        title: video.title,
+        preview: video.caption || video.authorName,
+        action: "open-video-result",
+        button: "View"
       });
     }
   });
@@ -1520,7 +2520,7 @@ function getSelectedConversation(conversations = state.conversations) {
 
 function renderConversationCard(conversation, selectedId = state.activeConversationId) {
   const last = [...(conversation.messages || [])].pop();
-  const preview = last ? last.text : conversation.description || "No messages yet";
+  const preview = last ? (last.text || "Encrypted message") : conversation.description || "No messages yet";
   return `
     <button class="list-card ${conversation.id === selectedId ? "is-active" : ""}" type="button" data-action="open-conversation" data-conversation-id="${conversation.id}">
       <span class="avatar avatar-small" style="background:${avatarGradient(conversation.name)}">${conversationAvatar(conversation)}</span>
@@ -1564,33 +2564,40 @@ function getAuthorIconId(authorId, fallbackIconId) {
   return authorId === state.profile.id ? state.profile.iconId : fallbackIconId;
 }
 
-function avatarBackground(name, iconId) {
+function getAuthorPicture(authorId) {
+  if (authorId === state.profile.id) return state.profile.picture || "";
+  return getPersonById(authorId)?.picture || "";
+}
+
+function avatarBackground(name, iconId, picture = "") {
   const icon = getProfileIcon(iconId);
-  if (state?.profile?.picture && name === state.profile.name) return `center / cover no-repeat url("${state.profile.picture}")`;
+  if (picture) return `center / cover no-repeat url("${picture}")`;
   if (iconId && icon) return `linear-gradient(145deg, ${icon.colors[0]}, ${icon.colors[1]})`;
   return avatarGradient(name);
 }
 
-function avatarInner(name, iconId) {
+function avatarInner(name, iconId, picture = "") {
   const icon = getProfileIcon(iconId);
-  if (state?.profile?.picture && name === state.profile.name) return "";
+  if (picture) return "";
   if (iconId && icon) {
     return `<span class="profile-glyph" aria-hidden="true">${profileGlyphs[icon.glyph] || profileGlyphs.chat}</span>`;
   }
   return escapeHtml(getInitials(name));
 }
 
-function renderAvatar(name, sizeClass = "", iconId = "") {
+function renderAvatar(name, sizeClass = "", iconId = "", picture = "") {
   const hasIcon = Boolean(iconId && getProfileIcon(iconId));
-  return `<span class="avatar ${sizeClass} ${hasIcon ? "has-profile-icon" : ""}" style="background:${avatarBackground(name, iconId)}" title="${escapeAttribute(name)}">${avatarInner(name, iconId)}</span>`;
+  return `<span class="avatar ${sizeClass} ${hasIcon ? "has-profile-icon" : ""} ${picture ? "has-photo" : ""}" style="background:${avatarBackground(name, iconId, picture)}" title="${escapeAttribute(name)}">${avatarInner(name, iconId, picture)}</span>`;
 }
 
 function paintAvatar(node, name, iconId) {
-  node.innerHTML = avatarInner(name, iconId);
-  node.style.background = avatarBackground(name, iconId);
+  const picture = state?.profile?.picture && name === state.profile.name ? state.profile.picture : "";
+  node.innerHTML = avatarInner(name, iconId, picture);
+  node.style.background = avatarBackground(name, iconId, picture);
   node.classList.toggle("has-profile-icon", Boolean(iconId && getProfileIcon(iconId)));
+  node.classList.toggle("has-photo", Boolean(picture));
   node.setAttribute("title", name);
-  if (state?.profile?.picture && name === state.profile.name) node.style.color = "transparent";
+  node.style.color = picture ? "transparent" : "";
 }
 
 function renderProfileIconPicker(selectedIconId) {
@@ -1640,6 +2647,78 @@ function withCurrentUser(members) {
 
 function fileCount(conversation) {
   return (conversation.messages || []).filter((message) => message.attachment).length;
+}
+
+function getPersonById(id) {
+  if (id === state.profile.id) return state.profile;
+  return state.people.find((person) => person.id === id);
+}
+
+function isFollowing(userId) {
+  return (state.social.following || []).includes(userId);
+}
+
+function isBlocked(userId) {
+  return (state.social.blocked || []).includes(userId);
+}
+
+function isContentRestricted(item) {
+  if (!item) return false;
+  if (["suspended", "restricted", "banned"].includes(item.moderationStatus)) return true;
+  if (state.preferences.kidsFilteredFeed || state.profile.accountType === "kids") {
+    const text = `${item.content || ""} ${item.caption || ""} ${item.title || ""}`.toLowerCase();
+    return ["violence", "adult", "betting", "gambling", "scam"].some((word) => text.includes(word));
+  }
+  return false;
+}
+
+function filteredVideos() {
+  return (state.videos || [])
+    .filter((video) => !isContentRestricted(video) && !isBlocked(video.authorId))
+    .sort((a, b) => scoreForYou(b) - scoreForYou(a));
+}
+
+function approvedAds() {
+  return (state.ads || [])
+    .filter((ad) => !isContentRestricted(ad) && ["active", "awaiting_payment", "paid"].includes(ad.status || "awaiting_payment"))
+    .sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+}
+
+function scoreForYou(item) {
+  const followedBoost = isFollowing(item.authorId) ? 1000000000 : 0;
+  return followedBoost + (item.createdAt || 0);
+}
+
+function badgeMarkup(profile) {
+  const badges = profile?.badges || [];
+  if (!badges.length) return "";
+  return badges.map((badge) => {
+    if (badge === "developer") {
+      return `<span class="verification-badge developer-badge" title="Pinglo developer badge"><img src="./pinglo-icon.svg" alt="" /></span>`;
+    }
+    return `<span class="verification-badge" title="Verified account"><span data-icon="badge"></span></span>`;
+  }).join("");
+}
+
+function accountTypeLabel(value) {
+  return {
+    standard: "Pinglo Standard",
+    premium: "Pinglo Premium",
+    kids: "Pinglo Kids",
+    kids_pending_payment: "Pinglo Kids pending payment"
+  }[value] || "Pinglo Standard";
+}
+
+function normalizeHandle(value) {
+  return String(value || "").replace(/^@/, "").trim().toLowerCase();
+}
+
+function formatMoney(value, currency = "NGN") {
+  return new Intl.NumberFormat(undefined, {
+    style: "currency",
+    currency,
+    maximumFractionDigits: currency === "NGN" ? 0 : 2
+  }).format(Number(value || 0));
 }
 
 function conversationAvatar(conversation) {

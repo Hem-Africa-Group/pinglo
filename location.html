@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Global Footprint | Pinglo</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        :root { --void: #020202; }
+        body { 
+            background-color: var(--void); 
+            color: #f5f5f7; 
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif;
+            -webkit-font-smoothing: antialiased;
+        }
+        .glass-card { 
+            background: rgba(255, 255, 255, 0.02); 
+            backdrop-filter: blur(24px); 
+            -webkit-backdrop-filter: blur(24px);
+            border: 1px solid rgba(255, 255, 255, 0.05); 
+        }
+        .text-gradient {
+            background: linear-gradient(135deg, #ffffff 30%, #a1a1aa 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .glow-effect {
+            position: absolute;
+            width: 400px;
+            height: 400px;
+            background: radial-gradient(circle, rgba(59, 130, 246, 0.03) 0%, transparent 70%);
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between selection:bg-white/20 selection:text-white">
+
+    <!-- Ambient Background Glows -->
+    <div class="glow-effect top-[-100px] left-[-100px]"></div>
+    <div class="glow-effect bottom-[-100px] right-[-100px]"></div>
+
+    <!-- Navigation -->
+    <nav class="w-full px-8 py-6 flex items-center justify-between fixed top-0 z-50 glass-card border-b-0 border-x-0 border-t-0">
+        <div class="flex items-center space-x-3">
+            <div class="w-7 h-7 rounded-full bg-white/10 flex items-center justify-center border border-white/20">
+                <span class="text-white font-black text-xs tracking-tighter">P</span>
+            </div>
+            <span class="text-md font-bold tracking-tight uppercase">Pinglo Infrastructure</span>
+        </div>
+        <a href="./index.html" class="text-xs font-semibold uppercase tracking-wider text-gray-400 hover:text-white transition">
+            Back to Dashboard
+        </a>
+    </nav>
+
+    <!-- Main Content Dynamic Container -->
+    <main class="flex-1 mt-36 px-6 max-w-5xl mx-auto w-full space-y-20 mb-24">
+        
+        <!-- Header Section -->
+        <header class="space-y-4 max-w-2xl">
+            <div class="text-[10px] font-bold tracking-[0.25em] text-blue-400 uppercase">
+                Availability & Localization
+            </div>
+            <h1 class="text-4xl md:text-6xl font-black tracking-tight text-gradient leading-none">
+                Global Network.<br>Native Presence.
+            </h1>
+            <p class="text-gray-400 text-base md:text-lg leading-relaxed">
+                Pinglo coordinates real-time communications across decentralized nodes, explicitly engineered to bridge sovereign digital corridors between West Africa and North America.
+            </p>
+        </header>
+
+        <!-- Twin Distribution Columns -->
+        <div class="grid md:grid-cols-2 gap-8 items-start">
+            
+            <!-- Column 1: Locations / Data Nodes -->
+            <section class="space-y-6">
+                <div class="flex items-center space-x-3 border-b border-white/10 pb-3">
+                    <i data-lucide="map-pin" class="w-5 h-5 text-gray-400"></i>
+                    <h2 class="text-xl font-bold tracking-tight">Operational Hubs</h2>
+                </div>
+                
+                <div class="space-y-4">
+                    <!-- Hub 1 -->
+                    <div class="glass-card p-6 rounded-2xl flex justify-between items-center group hover:border-white/10 transition">
+                        <div>
+                            <h3 class="font-bold text-white tracking-tight">Lagos, Nigeria</h3>
+                            <p class="text-xs text-gray-400 mt-0.5">Primary West African Infrastructure Hub</p>
+                        </div>
+                        <span class="text-[10px] bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-bold px-2 py-1 rounded-md uppercase tracking-wider">Active Node</span>
+                    </div>
+
+                    <!-- Hub 2 -->
+                    <div class="glass-card p-6 rounded-2xl flex justify-between items-center group hover:border-white/10 transition">
+                        <div>
+                            <h3 class="font-bold text-white tracking-tight">Accra, Ghana</h3>
+                            <p class="text-xs text-gray-400 mt-0.5">Regional Encryption & Transit Node</p>
+                        </div>
+                        <span class="text-[10px] bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-bold px-2 py-1 rounded-md uppercase tracking-wider">Active Node</span>
+                    </div>
+
+                    <!-- Hub 3 -->
+                    <div class="glass-card p-6 rounded-2xl flex justify-between items-center group hover:border-white/10 transition">
+                        <div>
+                            <h3 class="font-bold text-white tracking-tight">New York, USA</h3>
+                            <p class="text-xs text-gray-400 mt-0.5">North American Transatlantic Gateway</p>
+                        </div>
+                        <span class="text-[10px] bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-bold px-2 py-1 rounded-md uppercase tracking-wider">Active Node</span>
+                    </div>
+
+                    <!-- Hub 4 -->
+                    <div class="glass-card p-6 rounded-2xl flex justify-between items-center group hover:border-white/10 transition">
+                        <div>
+                            <h3 class="font-bold text-white tracking-tight">Toronto, Canada</h3>
+                            <p class="text-xs text-gray-400 mt-0.5">Secondary Distribution Edge</p>
+                        </div>
+                        <span class="text-[10px] bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-bold px-2 py-1 rounded-md uppercase tracking-wider">Active Node</span>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Column 2: Languages / Localization -->
+            <section class="space-y-6">
+                <div class="flex items-center space-x-3 border-b border-white/10 pb-3">
+                    <i data-lucide="languages" class="w-5 h-5 text-gray-400"></i>
+                    <h2 class="text-xl font-bold tracking-tight">Language Protocols</h2>
+                </div>
+
+                <div class="glass-card p-8 rounded-3xl space-y-6">
+                    <p class="text-xs text-gray-400 leading-relaxed">
+                        To preserve absolute clarity within executive networks, Pinglo offers comprehensive localization packages engineered directly into the UI layers.
+                    </p>
+
+                    <!-- Language Grid Matrix -->
+                    <div class="grid grid-cols-2 gap-3">
+                        <div class="bg-white/[0.02] border border-white/5 rounded-xl p-4 text-center">
+                            <div class="text-sm font-bold text-white">English</div>
+                            <div class="text-[10px] text-gray-500 font-medium mt-0.5 uppercase tracking-wider">Global Standard</div>
+                        </div>
+                        <div class="bg-white/[0.02] border border-white/5 rounded-xl p-4 text-center">
+                            <div class="text-sm font-bold text-white">Français</div>
+                            <div class="text-[10px] text-gray-500 font-medium mt-0.5 uppercase tracking-wider">Regional Tier 1</div>
+                        </div>
+                        <div class="bg-white/[0.02] border border-white/5 rounded-xl p-4 text-center">
+                            <div class="text-sm font-bold text-white">Yorùbá</div>
+                            <div class="text-[10px] text-gray-500 font-medium mt-0.5 uppercase tracking-wider">Native Dialect</div>
+                        </div>
+                        <div class="bg-white/[0.02] border border-white/5 rounded-xl p-4 text-center">
+                            <div class="text-sm font-bold text-white">Asante Twi</div>
+                            <div class="text-[10px] text-gray-500 font-medium mt-0.5 uppercase tracking-wider">Native Dialect</div>
+                        </div>
+                        <div class="bg-white/[0.02] border border-white/5 rounded-xl p-4 text-center">
+                            <div class="text-sm font-bold text-white">Hausa</div>
+                            <div class="text-[10px] text-gray-500 font-medium mt-0.5 uppercase tracking-wider">Native Dialect</div>
+                        </div>
+                        <div class="bg-white/[0.02] border border-white/5 rounded-xl p-4 text-center">
+                            <div class="text-sm font-bold text-white">Igbo</div>
+                            <div class="text-[10px] text-gray-500 font-medium mt-0.5 uppercase tracking-wider">Native Dialect</div>
+                        </div>
+                    </div>
+
+                    <div class="pt-4 border-t border-white/5 flex items-center space-x-3">
+                        <i data-lucide="shield-check" class="w-4 h-4 text-blue-400"></i>
+                        <span class="text-[11px] text-gray-400 font-medium">Dynamic system sync matches device localization automatically.</span>
+                    </div>
+                </div>
+            </section>
+
+        </div>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="border-t border-white/5 py-8 text-center bg-black/40 backdrop-blur-md">
+        <p class="text-[10px] text-gray-600 font-semibold uppercase tracking-[0.2em]">
+            &copy; 2026 H.E.M. Africa Group. Unified Distribution Systems.
+        </p>
+    </footer>
+
+    <script>
+        // Render lucide architecture icons safely
+        if (typeof lucide !== 'undefined') {
+            lucide.createIcons();
+        }
+    </script>
+</body>
+</html>

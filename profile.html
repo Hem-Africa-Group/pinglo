@@ -1,69 +1,112 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <title>My Profile — Pinglo</title>
-    <style>
-        body { background: #050816; color: white; font-family: sans-serif; margin: 0; }
-        .header { text-align: center; padding: 50px 20px; border-bottom: 1px solid #222; }
-        .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-        .post { background: #111; padding: 15px; border-radius: 10px; margin-bottom: 10px; border: 1px solid #333; }
-        .back-btn { position: absolute; top: 20px; left: 20px; color: #7c3aed; text-decoration: none; }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Profile | Pinglo</title>
+  <link rel="icon" href="./pinglo-icon.svg" type="image/svg+xml">
+  <style>
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: #08041f;
+      color: #f7f3ff;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      display: grid;
+      place-items: center;
+      padding: 20px;
+    }
+
+    .card {
+      width: min(720px, 100%);
+      border: 1px solid rgba(187, 166, 255, 0.19);
+      border-radius: 22px;
+      background: rgba(18, 15, 52, 0.86);
+      padding: 24px;
+      box-shadow: 0 24px 80px rgba(0, 0, 0, 0.36);
+    }
+
+    .profile-head {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .avatar {
+      width: 78px;
+      height: 78px;
+      border-radius: 24px;
+      display: grid;
+      place-items: center;
+      background: linear-gradient(145deg, #7a3cff, #19d4ff);
+      background-size: cover;
+      background-position: center;
+      font-size: 1.4rem;
+      font-weight: 900;
+    }
+
+    a, button {
+      display: inline-flex;
+      align-items: center;
+      min-height: 42px;
+      padding: 0 14px;
+      border-radius: 12px;
+      border: 0;
+      background: #7a3cff;
+      color: #fff;
+      text-decoration: none;
+      font-weight: 800;
+      cursor: pointer;
+    }
+
+    .muted { color: #b9abd6; }
+    .posts { display: grid; gap: 10px; margin-top: 22px; }
+    .post { border: 1px solid rgba(187, 166, 255, 0.19); border-radius: 14px; padding: 14px; background: rgba(255,255,255,0.04); }
+  </style>
 </head>
 <body>
-
-    <a href="home.html" class="back-btn">← Back to Feed</a>
-
-    <div class="header">
-        <div style="width:80px; height:80px; background:#7c3aed; border-radius:50%; margin: 0 auto 15px; display:grid; place-items:center; font-size:30px; font-weight:bold;" id="userInitial">U</div>
-        <h2 id="userEmail">Loading...</h2>
-        <p class="muted">Your Personal Posts</p>
+  <main class="card">
+    <div class="profile-head">
+      <div class="avatar" id="avatar">PG</div>
+      <div>
+        <h1 id="name">Profile</h1>
+        <p class="muted" id="handle">@you</p>
+      </div>
     </div>
+    <p class="muted" id="bio"></p>
+    <a href="./home.html#profile">Open full profile</a>
+    <section class="posts" id="posts"></section>
+  </main>
 
-    <div class="container" id="myPosts">
-        <p>Loading your history...</p>
-    </div>
+  <script>
+    const STORAGE_KEY = "pinglo:production:v2";
+    const account = readJson("pinglo_account") || {};
+    const state = readJson(STORAGE_KEY) || {};
+    const profile = { ...(state.profile || {}), ...account };
+    document.getElementById("name").textContent = profile.name || "Pinglo User";
+    document.getElementById("handle").textContent = profile.handle || "@you";
+    document.getElementById("bio").textContent = profile.bio || "Your Pinglo profile is managed from the main app.";
+    const avatar = document.getElementById("avatar");
+    if (profile.picture) {
+      avatar.style.backgroundImage = `url("${profile.picture}")`;
+      avatar.textContent = "";
+    } else {
+      avatar.textContent = initials(profile.name || profile.handle || "PG");
+    }
+    const posts = (state.posts || []).filter((post) => post.authorId === profile.id);
+    document.getElementById("posts").innerHTML = posts.length
+      ? posts.map((post) => `<article class="post">${escapeHtml(post.content)}</article>`).join("")
+      : `<p class="muted">No posts yet.</p>`;
 
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-        import { getFirestore, collection, query, where, getDocs, orderBy } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-
-        const firebaseConfig = {
-            apiKey: "AIzaSyACO46sTJQffwsQJfFN9cqYa_oDKG14AfQ",
-            authDomain: "hem-platform.firebaseapp.com",
-            projectId: "hem-platform",
-            storageBucket: "hem-platform.firebasestorage.app",
-            messagingSenderId: "846707696620",
-            appId: "1:846707696620:web:a64a8423f12f0e739816c9"
-        };
-
-        const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
-        const db = getFirestore(app);
-
-        onAuthStateChanged(auth, async (user) => {
-            if (!user) {
-                window.location.href = "login.html";
-            } else {
-                document.getElementById('userEmail').innerText = user.email;
-                document.getElementById('userInitial').innerText = user.email[0].toUpperCase();
-                
-                // Fetch User's Specific Posts
-                const q = query(collection(db, "posts"), where("user", "==", user.email));
-                const querySnapshot = await getDocs(q);
-                const container = document.getElementById('myPosts');
-                container.innerHTML = "";
-
-                if(querySnapshot.empty) container.innerHTML = "You haven't posted anything yet.";
-
-                querySnapshot.forEach((doc) => {
-                    const data = doc.data();
-                    container.innerHTML += `<div class="post"><p>${data.text}</p></div>`;
-                });
-            }
-        });
-    </script>
+    function readJson(key) {
+      try { return JSON.parse(localStorage.getItem(key) || "null"); } catch { return null; }
+    }
+    function initials(value) {
+      return String(value || "PG").trim().split(/\s+/).slice(0, 2).map((part) => part[0]).join("").toUpperCase() || "PG";
+    }
+    function escapeHtml(value) {
+      return String(value || "").replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;");
+    }
+  </script>
 </body>
 </html>

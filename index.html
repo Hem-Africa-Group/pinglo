@@ -9,7 +9,6 @@
     <script src="https://unpkg.com/lucide@latest"></script>
     <style>
         :root { --void: #020202; }
-        /* Added opacity: 0 to prevent flash */
         body { background-color: var(--void); color: white; font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif; opacity: 0; transition: opacity 0.2s ease; }
         .glass { background: rgba(255, 255, 255, 0.03); backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.1); }
         .gradient-text { background: linear-gradient(to bottom right, #fff, #60a5fa); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
@@ -20,8 +19,6 @@
     </style>
 </head>
 <body class="min-h-screen flex flex-col justify-between overflow-x-hidden">
-    <!-- Immediate Guard Script -->
-    <!-- Immediate Guard Script -->
     <script>
         const hasSession = Boolean(localStorage.getItem('pinglo_access_token'));
         const hasAccount = Boolean(localStorage.getItem('pinglo_account'));
@@ -35,7 +32,6 @@
         }
     </script>
 
-    <!-- Nav -->
     <nav class="p-8 flex items-center justify-between">
         <div class="flex items-center space-x-3">
             <img src="./pinglo-icon.svg" alt="Pinglo" class="w-10 h-10">
@@ -46,13 +42,10 @@
         </div>
     </nav>
 
-    <!-- Main Content -->
     <main class="flex-1 max-w-7xl mx-auto w-full grid lg:grid-cols-2 gap-12 items-center px-8 my-8">
         
-        <!-- Auth Panel Container -->
         <div class="glass p-8 md:p-12 rounded-[3rem] w-full max-w-md mx-auto lg:mx-0 relative min-h-[580px] flex flex-col justify-center overflow-hidden">
             
-            <!-- Login View -->
             <div id="login-view" class="view-transition view-visible w-full">
                 <h2 class="text-3xl font-black mb-2">Welcome Back</h2>
                 <p class="text-gray-500 mb-8">Sign in to your Pinglo account.</p>
@@ -67,6 +60,10 @@
                         <input type="password" id="login-password" placeholder="Password" class="w-full bg-black/50 border border-white/10 p-4 rounded-2xl outline-none focus:border-blue-500 transition text-white placeholder-gray-600" required autocomplete="current-password">
                     </label>
                     
+                    <div class="flex justify-end mt-2">
+                        <button id="show-forgot-btn" type="button" class="text-sm text-blue-400 hover:text-blue-300 transition outline-none">Forgot Password?</button>
+                    </div>
+                    
                     <div id="login-error-alert" class="hidden text-sm text-red-400 bg-red-500/10 border border-red-500/20 p-4 rounded-2xl"></div>
                     
                     <button type="submit" id="login-submit-btn" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-4 rounded-2xl transition mt-4 flex justify-center items-center space-x-2">
@@ -79,7 +76,6 @@
                 </div>
             </div>
 
-            <!-- Signup View -->
             <div id="signup-view" class="view-transition view-hidden w-full hidden">
                 <h2 class="text-3xl font-black mb-2">Join Pinglo</h2>
                 <p class="text-gray-500 mb-6">Establish your digital presence.</p>
@@ -134,7 +130,6 @@
                 </div>
             </div>
 
-            <!-- Verification View -->
             <div id="verify-view" class="view-transition view-hidden w-full hidden">
                 <h2 class="text-3xl font-black mb-2">Verify Identity</h2>
                 <p id="verify-meta-text" class="text-gray-500 mb-8">Verification security payload dispatched.</p>
@@ -157,9 +152,59 @@
                     Back to registration? <button id="abort-verify-btn" class="text-blue-400 hover:text-blue-300 font-medium ml-1 transition outline-none">Register screen</button>
                 </div>
             </div>
+
+            <div id="forgot-view" class="view-transition view-hidden w-full hidden">
+                <h2 class="text-3xl font-black mb-2">Account Recovery</h2>
+                <p class="text-gray-500 mb-8">Enter your email to dispatch a secure reset code.</p>
+                
+                <form id="forgot-form" class="space-y-4">
+                    <label class="block">
+                        <span class="sr-only">Email</span>
+                        <input type="email" id="forgot-email" placeholder="Email Address" class="w-full bg-black/50 border border-white/10 p-4 rounded-2xl outline-none focus:border-blue-500 transition text-white placeholder-gray-600" required autocomplete="email">
+                    </label>
+                    
+                    <div id="forgot-error-alert" class="hidden text-sm text-red-400 bg-red-500/10 border border-red-500/20 p-4 rounded-2xl"></div>
+                    
+                    <button type="submit" id="forgot-submit-btn" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-4 rounded-2xl transition mt-4 flex justify-center items-center space-x-2">
+                        <span>Request Reset Code</span>
+                    </button>
+                </form>
+
+                <div class="mt-8 text-center text-sm text-gray-500">
+                    Remembered your password? <button id="forgot-to-login-btn" class="text-blue-400 hover:text-blue-300 font-medium ml-1 transition outline-none">Return to login</button>
+                </div>
+            </div>
+
+            <div id="reset-view" class="view-transition view-hidden w-full hidden">
+                <h2 class="text-3xl font-black mb-2">Reset Password</h2>
+                <p class="text-gray-500 mb-8">Enter the verification code and your new credentials.</p>
+                
+                <form id="reset-form" class="space-y-4">
+                    <label class="block">
+                        <span class="sr-only">Reset Code</span>
+                        <input type="text" id="reset-code" placeholder="6-Digit Code" class="w-full bg-black/50 border border-white/10 p-4 rounded-2xl outline-none focus:border-blue-500 transition text-white placeholder-gray-600 text-center tracking-[0.25em] font-mono text-lg font-bold" required maxlength="6">
+                    </label>
+
+                    <label class="block">
+                        <span class="sr-only">New Password</span>
+                        <input type="password" id="reset-password" placeholder="New Password" class="w-full bg-black/50 border border-white/10 p-4 rounded-2xl outline-none focus:border-blue-500 transition text-white placeholder-gray-600 text-sm" required autocomplete="new-password">
+                    </label>
+                    
+                    <div id="reset-error-alert" class="hidden text-sm text-red-400 bg-red-500/10 border border-red-500/20 p-4 rounded-2xl"></div>
+                    <div id="reset-success-alert" class="hidden text-sm text-green-400 bg-green-500/10 border border-green-500/20 p-4 rounded-2xl"></div>
+                    
+                    <button type="submit" id="reset-submit-btn" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-4 rounded-2xl transition mt-4 flex justify-center items-center space-x-2">
+                        <span>Confirm New Password</span>
+                    </button>
+                </form>
+
+                <div class="mt-8 text-center text-sm text-gray-500">
+                    Cancel recovery? <button id="reset-to-login-btn" class="text-blue-400 hover:text-blue-300 font-medium ml-1 transition outline-none">Return to login</button>
+                </div>
+            </div>
+
         </div>
 
-        <!-- Hero Side -->
         <div class="space-y-6 hidden lg:block">
             <h1 class="text-7xl font-black tracking-tight leading-[0.9] gradient-text">
                 The next era of <br>social discovery.
@@ -170,14 +215,17 @@
         </div>
     </main>
 
-    <!-- Footer -->
     <footer class="p-8 border-t border-white/5">
         <div class="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center text-xs text-gray-500 space-y-4 md:space-y-0">
-            <p>Â© 2026 H.E.M. Africa Group</p>
+            <p>© 2026 H.E.M. Africa Group</p>
             <div class="flex space-x-8 font-medium">
                 <a href="terms.html" class="hover:text-blue-400 transition">Terms of Service</a>
                 <a href="privacy.html" class="hover:text-blue-400 transition">Privacy</a>
                 <a href="help.html" class="hover:text-blue-400 transition">Help Center</a>
+                <a href="about.html" class="hover:text-blue-400 transition">About</a>
+                <a href="security.html" class="hover:text-blue-400 transition">Security</a>
+                <a href="status.html" class="hover:text-blue-400 transition">Status</a>
+                <a href="location.html" class="hover:text-blue-400 transition">Location</a>
             </div>
         </div>
     </footer>
@@ -192,10 +240,16 @@
         const loginView = document.getElementById('login-view');
         const signupView = document.getElementById('signup-view');
         const verifyView = document.getElementById('verify-view');
+        const forgotView = document.getElementById('forgot-view');
+        const resetView = document.getElementById('reset-view');
+        
         const loginErrorAlert = document.getElementById('login-error-alert');
         const signupErrorAlert = document.getElementById('signup-error-alert');
         const verifyErrorAlert = document.getElementById('verify-error-alert');
         const verifySuccessAlert = document.getElementById('verify-success-alert');
+        const forgotErrorAlert = document.getElementById('forgot-error-alert');
+        const resetErrorAlert = document.getElementById('reset-error-alert');
+        const resetSuccessAlert = document.getElementById('reset-success-alert');
 
         let targetedVerificationEmail = '';
         let selectedAvatarDataUrl = '';
@@ -205,6 +259,9 @@
             signupErrorAlert.classList.add('hidden');
             verifyErrorAlert.classList.add('hidden');
             verifySuccessAlert.classList.add('hidden');
+            forgotErrorAlert.classList.add('hidden');
+            resetErrorAlert.classList.add('hidden');
+            resetSuccessAlert.classList.add('hidden');
         }
 
         function transitionToView(currentView, nextView) {
@@ -288,10 +345,15 @@
             reader.readAsDataURL(file);
         });
 
+        // Navigation Bindings
         document.getElementById('show-signup-btn').addEventListener('click', (e) => { e.preventDefault(); transitionToView(loginView, signupView); });
         document.getElementById('show-login-btn').addEventListener('click', (e) => { e.preventDefault(); transitionToView(signupView, loginView); });
         document.getElementById('abort-verify-btn').addEventListener('click', (e) => { e.preventDefault(); transitionToView(verifyView, signupView); });
+        document.getElementById('show-forgot-btn').addEventListener('click', (e) => { e.preventDefault(); transitionToView(loginView, forgotView); });
+        document.getElementById('forgot-to-login-btn').addEventListener('click', (e) => { e.preventDefault(); transitionToView(forgotView, loginView); });
+        document.getElementById('reset-to-login-btn').addEventListener('click', (e) => { e.preventDefault(); transitionToView(resetView, loginView); });
 
+        // Login Submit
         document.getElementById('login-form').addEventListener('submit', async (e) => {
             e.preventDefault();
             const btn = document.getElementById('login-submit-btn');
@@ -327,6 +389,7 @@
             }
         });
 
+        // Signup Submit
         document.getElementById('signup-form').addEventListener('submit', async (e) => {
             e.preventDefault();
             const btn = document.getElementById('signup-submit-btn');
@@ -355,6 +418,7 @@
             }
         });
 
+        // Verification Submit
         document.getElementById('verify-form').addEventListener('submit', async (e) => {
             e.preventDefault();
             const code = document.getElementById('verify-code').value.trim();
@@ -374,14 +438,64 @@
             }
         });
 
+        // Forgot Password Submit
+        document.getElementById('forgot-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const btn = document.getElementById('forgot-submit-btn');
+            btn.disabled = true;
+            btn.textContent = 'Dispatching Payload...';
+            const email = document.getElementById('forgot-email').value.trim();
+            
+            try {
+                const response = await fetch(poolData.Endpoint, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-amz-json-1.1', 'X-Amz-Target': 'AWSCognitoIdentityProviderService.ForgotPassword' },
+                    body: JSON.stringify({ ClientId: poolData.ClientId, Username: email })
+                });
+                const data = await response.json();
+                if (!response.ok) throw new Error(data.message || "Failed to dispatch recovery code.");
+                targetedVerificationEmail = email;
+                transitionToView(forgotView, resetView);
+            } catch (err) {
+                forgotErrorAlert.textContent = err.message;
+                forgotErrorAlert.classList.remove('hidden');
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Request Reset Code';
+            }
+        });
+
+        // Reset Password Submit
+        document.getElementById('reset-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const btn = document.getElementById('reset-submit-btn');
+            btn.disabled = true;
+            btn.textContent = 'Updating Security...';
+            const code = document.getElementById('reset-code').value.trim();
+            const newPassword = document.getElementById('reset-password').value;
+
+            try {
+                const response = await fetch(poolData.Endpoint, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-amz-json-1.1', 'X-Amz-Target': 'AWSCognitoIdentityProviderService.ConfirmForgotPassword' },
+                    body: JSON.stringify({ ClientId: poolData.ClientId, Username: targetedVerificationEmail, ConfirmationCode: code, Password: newPassword })
+                });
+                const data = await response.json();
+                if (!response.ok) throw new Error(data.message || "Failed to reset password.");
+                
+                resetSuccessAlert.textContent = "Security clearance updated! Redirecting...";
+                resetSuccessAlert.classList.remove('hidden');
+                setTimeout(() => transitionToView(resetView, loginView), 2000);
+            } catch (err) {
+                resetErrorAlert.textContent = err.message;
+                resetErrorAlert.classList.remove('hidden');
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Confirm New Password';
+            }
+        });
+
         if (typeof lucide !== 'undefined') lucide.createIcons();
     </script>
 </body>
 </html>
-
-
-
-
-
-
-

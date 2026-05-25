@@ -12,6 +12,7 @@ Globals:
     Environment:
       Variables:
         STATE_TABLE: !Ref PingloStateTable
+        ADMIN_TABLE: !Ref PingloAdminTable
         UPLOAD_BUCKET: !Ref PingloUploadBucket
         ALLOWED_ORIGIN: !Ref AllowedOrigin
 
@@ -70,6 +71,23 @@ Resources:
               - !Ref AllowedOrigin
             MaxAge: 3000
 
+  PingloAdminTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: pk
+          AttributeType: S
+        - AttributeName: sk
+          AttributeType: S
+      KeySchema:
+        - AttributeName: pk
+          KeyType: HASH
+        - AttributeName: sk
+          KeyType: RANGE
+      SSESpecification:
+        SSEEnabled: true
+
   StateFunction:
     Type: AWS::Serverless::Function
     Properties:
@@ -108,6 +126,34 @@ Resources:
             Path: /uploads/presign
             Method: POST
 
+  AdminFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: .
+      Handler: src/admin.handler
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref PingloAdminTable
+      Events:
+        GetDashboard:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref PingloApi
+            Path: /admin/dashboard
+            Method: GET
+        CreateStaff:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref PingloApi
+            Path: /admin/staff
+            Method: POST
+        CreateLog:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref PingloApi
+            Path: /admin/logs
+            Method: POST
+
 Outputs:
   ApiUrl:
     Description: Base URL for the Pinglo API
@@ -118,3 +164,6 @@ Outputs:
   UploadBucketName:
     Description: S3 bucket for uploaded attachments
     Value: !Ref PingloUploadBucket
+  AdminTableName:
+    Description: DynamoDB table for H.E.M Core admin logs and staff queues
+    Value: !Ref PingloAdminTable
