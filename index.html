@@ -1,0 +1,387 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pinglo | H.E.M. Africa</title>
+    <link rel="icon" href="./pinglo-icon.svg" type="image/svg+xml" />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        :root { --void: #020202; }
+        /* Added opacity: 0 to prevent flash */
+        body { background-color: var(--void); color: white; font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif; opacity: 0; transition: opacity 0.2s ease; }
+        .glass { background: rgba(255, 255, 255, 0.03); backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.1); }
+        .gradient-text { background: linear-gradient(to bottom right, #fff, #60a5fa); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        
+        .view-transition { transition: opacity 0.3s ease, transform 0.3s ease; }
+        .view-hidden { opacity: 0; transform: translateY(8px); pointer-events: none; position: absolute; width: calc(100% - 2rem); }
+        .view-visible { opacity: 1; transform: translateY(0); }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between overflow-x-hidden">
+    <!-- Immediate Guard Script -->
+    <!-- Immediate Guard Script -->
+    <script>
+        const hasSession = Boolean(localStorage.getItem('pinglo_access_token'));
+        const hasAccount = Boolean(localStorage.getItem('pinglo_account'));
+        if (hasSession && hasAccount) {
+            window.location.href = "./home.html";
+        } else {
+            localStorage.removeItem('pinglo_access_token');
+            localStorage.removeItem('pinglo_id_token');
+            localStorage.removeItem('pinglo_refresh_token');
+            document.body.style.opacity = '1';
+        }
+    </script>
+
+    <!-- Nav -->
+    <nav class="p-8 flex items-center justify-between">
+        <div class="flex items-center space-x-3">
+            <img src="./pinglo-icon.svg" alt="Pinglo" class="w-10 h-10">
+            <span class="text-2xl font-black tracking-tighter">Pinglo</span>
+        </div>
+        <div class="text-[10px] font-bold text-gray-500 uppercase tracking-[0.2em]">
+            H.E.M. Africa Digital Infrastructure
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="flex-1 max-w-7xl mx-auto w-full grid lg:grid-cols-2 gap-12 items-center px-8 my-8">
+        
+        <!-- Auth Panel Container -->
+        <div class="glass p-8 md:p-12 rounded-[3rem] w-full max-w-md mx-auto lg:mx-0 relative min-h-[580px] flex flex-col justify-center overflow-hidden">
+            
+            <!-- Login View -->
+            <div id="login-view" class="view-transition view-visible w-full">
+                <h2 class="text-3xl font-black mb-2">Welcome Back</h2>
+                <p class="text-gray-500 mb-8">Sign in to your Pinglo account.</p>
+                
+                <form id="login-form" class="space-y-4">
+                    <label class="block">
+                        <span class="sr-only">Email</span>
+                        <input type="email" id="login-email" placeholder="Email" class="w-full bg-black/50 border border-white/10 p-4 rounded-2xl outline-none focus:border-blue-500 transition text-white placeholder-gray-600" required autocomplete="username">
+                    </label>
+                    <label class="block">
+                        <span class="sr-only">Password</span>
+                        <input type="password" id="login-password" placeholder="Password" class="w-full bg-black/50 border border-white/10 p-4 rounded-2xl outline-none focus:border-blue-500 transition text-white placeholder-gray-600" required autocomplete="current-password">
+                    </label>
+                    
+                    <div id="login-error-alert" class="hidden text-sm text-red-400 bg-red-500/10 border border-red-500/20 p-4 rounded-2xl"></div>
+                    
+                    <button type="submit" id="login-submit-btn" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-4 rounded-2xl transition mt-4 flex justify-center items-center space-x-2">
+                        <span>Sign In</span>
+                    </button>
+                </form>
+
+                <div class="mt-8 text-center text-sm text-gray-500">
+                    New to the network? <button id="show-signup-btn" class="text-blue-400 hover:text-blue-300 font-medium ml-1 transition outline-none">Create an account</button>
+                </div>
+            </div>
+
+            <!-- Signup View -->
+            <div id="signup-view" class="view-transition view-hidden w-full hidden">
+                <h2 class="text-3xl font-black mb-2">Join Pinglo</h2>
+                <p class="text-gray-500 mb-6">Establish your digital presence.</p>
+                
+                <form id="signup-form" class="space-y-4">
+                    <div class="grid grid-cols-2 gap-4">
+                        <label class="block">
+                            <span class="sr-only">Full Name</span>
+                            <input type="text" id="reg-name" placeholder="Full Name" class="w-full bg-black/50 border border-white/10 p-4 rounded-2xl outline-none focus:border-blue-500 transition text-white placeholder-gray-600 text-sm" required>
+                        </label>
+                        <label class="block">
+                            <span class="sr-only">Handler</span>
+                            <input type="text" id="reg-handle" placeholder="Preferred username" class="w-full bg-black/50 border border-white/10 p-4 rounded-2xl outline-none focus:border-blue-500 transition text-white placeholder-gray-600 text-sm" required>
+                        </label>
+                    </div>
+
+                    <label class="block">
+                        <span class="sr-only">Email</span>
+                        <input type="email" id="reg-email" placeholder="Email Address" class="w-full bg-black/50 border border-white/10 p-4 rounded-2xl outline-none focus:border-blue-500 transition text-white placeholder-gray-600 text-sm" required autocomplete="email">
+                    </label>
+
+                    <label class="block">
+                        <span class="sr-only">Password</span>
+                        <input type="password" id="reg-password" placeholder="Create Password" class="w-full bg-black/50 border border-white/10 p-4 rounded-2xl outline-none focus:border-blue-500 transition text-white placeholder-gray-600 text-sm" required autocomplete="new-password">
+                    </label>
+
+                    <label class="block">
+                        <span class="sr-only">Bio</span>
+                        <textarea id="reg-bio" placeholder="Short bio" maxlength="160" class="w-full bg-black/50 border border-white/10 p-4 rounded-2xl outline-none focus:border-blue-500 transition text-white placeholder-gray-600 text-sm min-h-[84px] resize-none"></textarea>
+                    </label>
+
+                    <label class="block">
+                        <span class="text-xs text-gray-500 font-bold uppercase tracking-widest">Profile picture</span>
+                        <input type="file" id="reg-avatar" accept="image/*" class="w-full bg-black/50 border border-white/10 p-3 rounded-2xl outline-none focus:border-blue-500 transition text-white placeholder-gray-600 text-sm mt-2">
+                    </label>
+                    <label class="flex items-start space-x-3 mt-4 group cursor-pointer">
+                        <input type="checkbox" id="reg-terms" class="mt-1 w-4 h-4 rounded bg-black/50 border-white/10 text-blue-600 focus:ring-blue-500" required>
+                        <span class="text-xs text-gray-400 group-hover:text-gray-300 transition leading-relaxed">
+                            I verify that I have read and accept the <a href="#" class="text-blue-400 hover:underline">Terms of Service</a> and <a href="#" class="text-blue-400 hover:underline">Privacy Policy</a> governing H.E.M. Africa infrastructure.
+                        </span>
+                    </label>
+                    
+                    <div id="signup-error-alert" class="hidden text-sm text-red-400 bg-red-500/10 border border-red-500/20 p-4 rounded-2xl mt-2"></div>
+                    
+                    <button type="submit" id="signup-submit-btn" class="w-full bg-white hover:bg-gray-200 text-black font-bold py-4 rounded-2xl transition mt-6 flex justify-center items-center space-x-2">
+                        <span>Initialize Account</span>
+                    </button>
+                </form>
+
+                <div class="mt-6 text-center text-sm text-gray-500">
+                    Already operational? <button id="show-login-btn" class="text-blue-400 hover:text-blue-300 font-medium ml-1 transition outline-none">Return to login</button>
+                </div>
+            </div>
+
+            <!-- Verification View -->
+            <div id="verify-view" class="view-transition view-hidden w-full hidden">
+                <h2 class="text-3xl font-black mb-2">Verify Identity</h2>
+                <p id="verify-meta-text" class="text-gray-500 mb-8">Verification security payload dispatched.</p>
+                
+                <form id="verify-form" class="space-y-4">
+                    <label class="block">
+                        <span class="sr-only">Verification Code</span>
+                        <input type="text" id="verify-code" placeholder="Enter 6-Digit Code" class="w-full bg-black/50 border border-white/10 p-4 rounded-2xl outline-none focus:border-blue-500 transition text-white placeholder-gray-600 text-center tracking-[0.25em] font-mono text-lg font-bold" required maxlength="6">
+                    </label>
+                    
+                    <div id="verify-error-alert" class="hidden text-sm text-red-400 bg-red-500/10 border border-red-500/20 p-4 rounded-2xl"></div>
+                    <div id="verify-success-alert" class="hidden text-sm text-green-400 bg-green-500/10 border border-green-500/20 p-4 rounded-2xl"></div>
+                    
+                    <button type="submit" id="verify-submit-btn" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-4 rounded-2xl transition mt-4 flex justify-center items-center space-x-2">
+                        <span>Confirm Account</span>
+                    </button>
+                </form>
+
+                <div class="mt-8 text-center text-sm text-gray-500">
+                    Back to registration? <button id="abort-verify-btn" class="text-blue-400 hover:text-blue-300 font-medium ml-1 transition outline-none">Register screen</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Hero Side -->
+        <div class="space-y-6 hidden lg:block">
+            <h1 class="text-7xl font-black tracking-tight leading-[0.9] gradient-text">
+                The next era of <br>social discovery.
+            </h1>
+            <p class="text-gray-400 text-xl leading-relaxed max-w-md">
+                Pinglo by H.E.M. Africa brings you closer to your circle with high-fidelity streaming and private, encrypted communication.
+            </p>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="p-8 border-t border-white/5">
+        <div class="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center text-xs text-gray-500 space-y-4 md:space-y-0">
+            <p>Â© 2026 H.E.M. Africa Group</p>
+            <div class="flex space-x-8 font-medium">
+                <a href="terms.html" class="hover:text-blue-400 transition">Terms of Service</a>
+                <a href="privacy.html" class="hover:text-blue-400 transition">Privacy</a>
+                <a href="help.html" class="hover:text-blue-400 transition">Help Center</a>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        const poolData = {
+            UserPoolId: 'eu-west-2_DrFJ5YR9S',
+            ClientId: 'pki9503iq4tj8q7tr9kcjt66p',
+            Endpoint: 'https://cognito-idp.eu-west-2.amazonaws.com/'
+        };
+
+        const loginView = document.getElementById('login-view');
+        const signupView = document.getElementById('signup-view');
+        const verifyView = document.getElementById('verify-view');
+        const loginErrorAlert = document.getElementById('login-error-alert');
+        const signupErrorAlert = document.getElementById('signup-error-alert');
+        const verifyErrorAlert = document.getElementById('verify-error-alert');
+        const verifySuccessAlert = document.getElementById('verify-success-alert');
+
+        let targetedVerificationEmail = '';
+        let selectedAvatarDataUrl = '';
+
+        function clearAlerts() {
+            loginErrorAlert.classList.add('hidden');
+            signupErrorAlert.classList.add('hidden');
+            verifyErrorAlert.classList.add('hidden');
+            verifySuccessAlert.classList.add('hidden');
+        }
+
+        function transitionToView(currentView, nextView) {
+            clearAlerts();
+            currentView.classList.remove('view-visible');
+            currentView.classList.add('view-hidden');
+            setTimeout(() => {
+                currentView.classList.add('hidden');
+                nextView.classList.remove('hidden');
+                nextView.offsetHeight;
+                nextView.classList.remove('view-hidden');
+                nextView.classList.add('view-visible');
+            }, 300);
+        }
+
+        function normalizeUsername(value) {
+            return String(value || '').trim().replace(/^@+/, '').replace(/[^a-zA-Z0-9_.-]/g, '').slice(0, 32);
+        }
+
+        function getInitials(value) {
+            return String(value || 'PG').trim().split(/\s+/).slice(0, 2).map((part) => part[0]).join('').toUpperCase() || 'PG';
+        }
+
+        function profileKey(email) {
+            return `pinglo:account:${String(email || '').trim().toLowerCase()}`;
+        }
+
+        function buildSignupProfile(email) {
+            const username = normalizeUsername(document.getElementById('reg-handle').value);
+            const name = document.getElementById('reg-name').value.trim();
+            return {
+                id: `user:${email.toLowerCase()}`,
+                email,
+                username,
+                name,
+                handle: `@${username}`,
+                bio: document.getElementById('reg-bio')?.value.trim() || '',
+                picture: selectedAvatarDataUrl,
+                status: 'Online',
+                initials: getInitials(name || username),
+                iconId: '',
+                theme: 'purple'
+            };
+        }
+
+        function getProfileForEmail(email) {
+            try {
+                const saved = JSON.parse(localStorage.getItem(profileKey(email)) || 'null');
+                if (saved) return saved;
+            } catch {}
+            const username = normalizeUsername(String(email || '').split('@')[0]) || 'pinglo_user';
+            return {
+                id: `user:${email.toLowerCase()}`,
+                email,
+                username,
+                name: username,
+                handle: `@${username}`,
+                bio: '',
+                picture: '',
+                status: 'Online',
+                initials: getInitials(username),
+                iconId: '',
+                theme: 'purple'
+            };
+        }
+
+        function storeSession(email, authResult) {
+            const profile = getProfileForEmail(email);
+            localStorage.setItem('pinglo_access_token', authResult.AccessToken || 'signed-in');
+            localStorage.setItem('pinglo_id_token', authResult.IdToken || '');
+            localStorage.setItem('pinglo_refresh_token', authResult.RefreshToken || '');
+            localStorage.setItem('pinglo_account', JSON.stringify(profile));
+            localStorage.setItem('pinglo:aws:user-id', profile.id);
+        }
+
+        document.getElementById('reg-avatar')?.addEventListener('change', (event) => {
+            const file = event.target.files?.[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = () => { selectedAvatarDataUrl = String(reader.result || ''); };
+            reader.readAsDataURL(file);
+        });
+
+        document.getElementById('show-signup-btn').addEventListener('click', (e) => { e.preventDefault(); transitionToView(loginView, signupView); });
+        document.getElementById('show-login-btn').addEventListener('click', (e) => { e.preventDefault(); transitionToView(signupView, loginView); });
+        document.getElementById('abort-verify-btn').addEventListener('click', (e) => { e.preventDefault(); transitionToView(verifyView, signupView); });
+
+        document.getElementById('login-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const btn = document.getElementById('login-submit-btn');
+            btn.disabled = true;
+            btn.textContent = 'Signing in...';
+            const email = document.getElementById('login-email').value.trim();
+            const password = document.getElementById('login-password').value;
+
+            try {
+                const response = await fetch(poolData.Endpoint, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-amz-json-1.1', 'X-Amz-Target': 'AWSCognitoIdentityProviderService.InitiateAuth' },
+                    body: JSON.stringify({ AuthFlow: 'USER_PASSWORD_AUTH', ClientId: poolData.ClientId, AuthParameters: { USERNAME: email, PASSWORD: password } })
+                });
+                const data = await response.json();
+                if (!response.ok) {
+                    if (data.__type?.includes('UserNotConfirmedException')) {
+                        targetedVerificationEmail = email;
+                        document.getElementById('verify-meta-text').textContent = `Please enter the confirmation token sent to ${email}`;
+                        transitionToView(loginView, verifyView);
+                        return;
+                    }
+                    throw new Error(data.message || "Sign in failed.");
+                }
+                storeSession(email.toLowerCase(), data.AuthenticationResult || {});
+                window.location.href = "./home.html";
+            } catch (err) {
+                loginErrorAlert.textContent = err.message;
+                loginErrorAlert.classList.remove('hidden');
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Sign In';
+            }
+        });
+
+        document.getElementById('signup-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const btn = document.getElementById('signup-submit-btn');
+            btn.disabled = true;
+            btn.textContent = 'Initializing...';
+            const email = document.getElementById('reg-email').value.trim().toLowerCase();
+            const password = document.getElementById('reg-password').value;
+            const profile = buildSignupProfile(email);
+            localStorage.setItem(profileKey(email), JSON.stringify(profile));
+            try {
+                const response = await fetch(poolData.Endpoint, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-amz-json-1.1', 'X-Amz-Target': 'AWSCognitoIdentityProviderService.SignUp' },
+                    body: JSON.stringify({ ClientId: poolData.ClientId, Username: email, Password: password, UserAttributes: [{ Name: 'email', Value: email }, { Name: 'name', Value: profile.name }, { Name: 'preferred_username', Value: profile.username }] })
+                });
+                const data = await response.json();
+                if (!response.ok) throw new Error(data.message || "Registration failed.");
+                targetedVerificationEmail = email;
+                transitionToView(signupView, verifyView);
+            } catch (err) {
+                signupErrorAlert.textContent = err.message;
+                signupErrorAlert.classList.remove('hidden');
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Initialize Account';
+            }
+        });
+
+        document.getElementById('verify-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const code = document.getElementById('verify-code').value.trim();
+            try {
+                const response = await fetch(poolData.Endpoint, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-amz-json-1.1', 'X-Amz-Target': 'AWSCognitoIdentityProviderService.ConfirmSignUp' },
+                    body: JSON.stringify({ ClientId: poolData.ClientId, Username: targetedVerificationEmail, ConfirmationCode: code })
+                });
+                if (!response.ok) throw new Error("Invalid code.");
+                verifySuccessAlert.textContent = "Verified! Redirecting...";
+                verifySuccessAlert.classList.remove('hidden');
+                setTimeout(() => transitionToView(verifyView, loginView), 2000);
+            } catch (err) {
+                verifyErrorAlert.textContent = err.message;
+                verifyErrorAlert.classList.remove('hidden');
+            }
+        });
+
+        if (typeof lucide !== 'undefined') lucide.createIcons();
+    </script>
+</body>
+</html>
+
+
+
+
+
+
+

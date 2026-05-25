@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Offline | Pinglo</title>
+    <style>
+        body {
+            background-color: #020202;
+            color: #ffffff;
+            font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100dvh;
+            margin: 0;
+            text-align: center;
+        }
+        .icon { width: 64px; height: 64px; border: 2px solid #fff; border-radius: 16px; margin-bottom: 24px; opacity: 0.5; }
+        h1 { font-size: 20px; font-weight: 600; margin: 0; }
+        p { font-size: 14px; opacity: 0.6; margin-top: 8px; }
+        button {
+            margin-top: 32px;
+            background: #fff;
+            color: #020202;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 12px;
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body>
+    <div class="icon"></div>
+    <h1>You're offline</h1>
+    <p>Check your connection to resume Pinglo.</p>
+    <button onclick="window.location.reload()">Retry Connection</button>
+</body>
+</html>

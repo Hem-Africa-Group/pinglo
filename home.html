@@ -1,0 +1,68 @@
+﻿<!doctype html>
+<html lang="en">
+  <head>
+    <script>
+      const hasSession = Boolean(localStorage.getItem("pinglo_access_token"));
+      const hasAccount = Boolean(localStorage.getItem("pinglo_account"));
+      if (!hasSession || !hasAccount) {
+        localStorage.removeItem("pinglo_access_token");
+        localStorage.removeItem("pinglo_id_token");
+        localStorage.removeItem("pinglo_refresh_token");
+        window.location.replace("./index.html");
+      }
+    </script>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content="Pinglo is a secure, modern chat workspace for conversations, groups, feed posts, search, and account settings." />
+    <meta name="theme-color" content="#061923" />
+    <title>Pinglo</title>
+    <link rel="icon" href="./pinglo-icon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div class="ambient" aria-hidden="true">
+      <span class="orbit orbit-one"></span>
+      <span class="orbit orbit-two"></span>
+      <span class="orbit orbit-three"></span>
+    </div>
+
+    <div class="app-shell">
+      <header class="topbar">
+        <a class="brand" href="#home" data-route="home" aria-label="Pinglo home">
+          <span class="brand-mark" aria-hidden="true"><img src="./pinglo-icon.svg" alt="" /></span>
+          <span>Pinglo</span>
+        </a>
+        <nav class="desktop-nav" aria-label="Primary navigation">
+          <button class="nav-link is-active" type="button" data-route="home"><span data-icon="home"></span>Home</button>
+          <button class="nav-link" type="button" data-route="feed"><span data-icon="feed"></span>Feed</button>
+          <button class="nav-link" type="button" data-route="inbox"><span data-icon="inbox"></span>Inbox</button>
+          <button class="nav-link" type="button" data-route="search"><span data-icon="search"></span>Search</button>
+          <button class="nav-link" type="button" data-route="settings"><span data-icon="settings"></span>Settings</button>
+        </nav>
+        <div class="topbar-actions">
+          <button class="icon-button" type="button" data-action="open-notifications" aria-label="Notifications"><span data-icon="bell"></span><span class="signal-dot" aria-hidden="true"></span></button>
+          <button class="icon-button" type="button" data-route="settings" aria-label="Settings"><span data-icon="settings"></span></button>
+          <button class="profile-chip" type="button" data-action="edit-profile">
+            <span class="avatar avatar-small" data-profile-avatar></span>
+            <span class="profile-copy"><strong data-profile-name>Profile</strong><small data-profile-status>Offline</small></span>
+            <span data-icon="chevron-down"></span>
+          </button>
+        </div>
+      </header>
+      <main id="pageRoot" class="page-root" tabindex="-1"></main>
+    </div>
+
+    <nav class="mobile-nav" aria-label="Mobile navigation">
+      <button class="mobile-link is-active" type="button" data-route="home"><span data-icon="home"></span><span>Home</span></button>
+      <button class="mobile-link" type="button" data-route="feed"><span data-icon="feed"></span><span>Feed</span></button>
+      <button class="mobile-compose" type="button" data-action="quick-compose" aria-label="Create"><span data-icon="plus"></span></button>
+      <button class="mobile-link" type="button" data-route="inbox"><span data-icon="inbox"></span><span>Inbox</span></button>
+      <button class="mobile-link" type="button" data-route="search"><span data-icon="search"></span><span>Search</span></button>
+    </nav>
+
+    <div id="modalRoot" class="modal-root" aria-live="polite"></div>
+    <div id="toastRegion" class="toast-region" aria-live="polite" aria-atomic="true"></div>
+    <script src="./aws-config.js" defer></script>
+    <script src="./script.js" defer></script>
+  </body>
+</html>

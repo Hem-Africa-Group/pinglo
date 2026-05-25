@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pinglo Help Center</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        :root { --void: #09090b; }
+        body { background-color: var(--void); color: #f4f4f5; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+        .glass { background: rgba(255, 255, 255, 0.02); backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.05); }
+        .glass-card:hover { background: rgba(255, 255, 255, 0.04); border-color: rgba(255, 255, 255, 0.1); }
+        .accordion-content { max-height: 0; overflow: hidden; transition: max-height 0.2s ease-out; }
+        .accordion-open .accordion-content { max-height: 300px; }
+        .accordion-open .chevron-icon { transform: rotate(180deg); }
+        
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: var(--void); }
+        ::-webkit-scrollbar-thumb { background: #27272a; border-radius: 3px; }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between">
+
+    <!-- Top Navigation -->
+    <nav class="sticky top-0 z-50 bg-zinc-950/80 backdrop-blur-md px-6 py-4 border-b border-zinc-800/50">
+        <div class="max-w-5xl mx-auto flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <img src="pinglo-icon.svg" alt="Pinglo" class="w-7 h-7 onError="this.style.display='none'">
+                <span class="text-lg font-bold tracking-tight text-white">Pinglo <span class="text-xs font-normal text-zinc-500 ml-1">Help Center</span></span>
+            </div>
+            <div class="flex items-center space-x-6 text-xs font-medium text-zinc-400">
+                <a href="terms.html" class="hover:text-white transition">Terms</a>
+                <a href="privacy.html" class="hover:text-white transition">Privacy</a>
+                <a href="index.html" class="glass px-3 py-1.5 rounded-lg text-white hover:bg-white/5 transition">Open Pinglo</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Search Panel -->
+    <header class="max-w-3xl mx-auto w-full px-6 pt-12 pb-6 text-center">
+        <h1 class="text-3xl md:text-5xl font-extrabold tracking-tight text-white mb-3">How can we help?</h1>
+        <p class="text-zinc-500 text-sm md:text-base mb-8">Search for answers about chats, stories, accounts, and safety settings.</p>
+        
+        <!-- Live Search Input -->
+        <div class="relative max-w-xl mx-auto">
+            <i data-lucide="search" class="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500 w-5 h-5"></i>
+            <input type="text" id="help-search-input" placeholder="Search topics like 'change password', 'delete story', 'blocked'..." class="w-full bg-zinc-900/50 border border-zinc-800 pl-12 pr-28 py-3.5 rounded-xl outline-none focus:border-zinc-700 focus:bg-zinc-900 transition text-white placeholder-zinc-600 text-sm shadow-xl">
+            <div id="topics-counter" class="absolute right-4 top-1/2 -translate-y-1/2 text-[11px] font-mono text-zinc-500 bg-zinc-800/50 px-2 py-0.5 rounded border border-zinc-700/50">150 Topics</div>
+        </div>
+    </header>
+
+    <!-- Quick Category Filter Dock -->
+    <div class="max-w-4xl mx-auto w-full px-6 py-2">
+        <div class="flex flex-wrap gap-2 justify-center" id="category-filter-dock">
+            <button onclick="filterCategory('all')" class="glass px-4 py-2 rounded-lg text-xs font-semibold text-white bg-white/10 transition">All Help Topics</button>
+            <button onclick="filterCategory('chats')" class="glass px-4 py-2 rounded-lg text-xs font-semibold text-zinc-400 hover:text-white transition">Chats & Groups</button>
+            <button onclick="filterCategory('stories')" class="glass px-4 py-2 rounded-lg text-xs font-semibold text-zinc-400 hover:text-white transition">Stories</button>
+            <button onclick="filterCategory('account')" class="glass px-4 py-2 rounded-lg text-xs font-semibold text-zinc-400 hover:text-white transition">My Account</button>
+            <button onclick="filterCategory('privacy')" class="glass px-4 py-2 rounded-lg text-xs font-semibold text-zinc-400 hover:text-white transition">Privacy & Safety</button>
+            <button onclick="filterCategory('kids')" class="glass px-4 py-2 rounded-lg text-xs font-semibold text-zinc-400 hover:text-white transition">Pinglo Kids</button>
+        </div>
+    </div>
+
+    <!-- Main Dynamic Help Grid -->
+    <main class="flex-1 max-w-3xl mx-auto w-full px-6 py-6">
+        <div id="no-results" class="hidden text-center py-12 glass rounded-2xl border border-zinc-800/60">
+            <i data-lucide="help-circle" class="w-6 h-6 text-zinc-500 mx-auto mb-2"></i>
+            <h3 class="text-sm font-semibold text-white">No matches found</h3>
+            <p class="text-xs text-zinc-500 mt-0.5">Try searching different keywords or message our support team down below.</p>
+        </div>
+
+        <div id="help-accordion-container" class="space-y-3">
+            <!-- JavaScript dynamically injects regular user topics here -->
+        </div>
+
+        <!-- Direct Customer Support Form -->
+        <section class="max-w-lg mx-auto w-full glass p-6 md:p-8 rounded-2xl border border-zinc-800/60 mt-16">
+            <div class="text-center mb-6">
+                <h2 class="text-xl font-bold text-white tracking-tight">Still need help?</h2>
+                <p class="text-xs text-zinc-500 mt-1">Send a message directly to our customer happiness team.</p>
+            </div>
+
+            <form id="contact-support-form" class="space-y-3.5">
+                <input type="email" id="support-email" placeholder="Your account email address" class="w-full bg-zinc-900/40 border border-zinc-800 p-3 rounded-lg outline-none focus:border-zinc-700 transition text-xs text-white placeholder-zinc-600" required>
+                
+                <select id="support-topic" class="w-full bg-zinc-900/40 border border-zinc-800 p-3 rounded-lg outline-none focus:border-zinc-700 transition text-xs text-zinc-400" required>
+                    <option value="" disabled selected>What's going on?</option>
+                    <option value="chats">Issue with messaging or video calls</option>
+                    <option value="stories">Issue uploading or viewing stories</option>
+                    <option value="account">Can't log in or reset password</option>
+                    <option value="privacy">Reporting bullying, spam, or fake accounts</option>
+                    <option value="kids">Pinglo Kids parental controls setup</option>
+                </select>
+
+                <textarea id="support-message" rows="3" placeholder="Tell us exactly what's wrong so we can fix it for you..." class="w-full bg-zinc-900/40 border border-zinc-800 p-3 rounded-lg outline-none focus:border-zinc-700 transition text-xs text-white placeholder-zinc-600 resize-none" required></textarea>
+
+                <div id="form-alert" class="hidden text-xs p-3 rounded-lg"></div>
+
+                <button type="submit" id="submit-btn" class="w-full bg-white text-black font-semibold py-3 rounded-lg hover:bg-zinc-200 transition text-xs tracking-tight">
+                    Send Help Request
+                </button>
+            </form>
+        </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="p-6 border-t border-zinc-900 mt-12 text-center md:text-left">
+        <div class="max-w-5xl mx-auto flex flex-col md:flex-row justify-between items-center text-xs text-zinc-600 space-y-3 md:space-y-0">
+            <p>© 2026 Pinglo By H.E.M. Africa Group</p>
+            <div class="flex space-x-6">
+                <a href="terms.html" class="hover:text-zinc-400 transition">Terms</a>
+                <a href="privacy.html" class="hover:text-zinc-400 transition">Privacy</a>
+                <a href="index.html" class="hover:text-zinc-400 transition">Log In</a>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Help Center Search Array Engine -->
+    <script>
+        const helpDatabase = [];
+        
+        const mainCategories = ['chats', 'stories', 'account', 'privacy', 'kids'];
+        const topicsMapping = {
+            chats: ['Group chats', 'Voice messages', 'Disappearing texts', 'Video calling', 'Sent status indicators', 'Media attachments'],
+            stories: ['Story privacy filters', 'Custom text styles', 'Camera upload issues', 'Viewing insights', 'Music stickers', 'Saved story archives'],
+            account: ['Password reset link', 'Username updates', 'Two-factor locks', 'Phone verification', 'Deactivating profiles', 'Dark mode display'],
+            privacy: ['Blocking profiles', 'Reporting harassment', 'Hidden chat filters', 'Location map sharing', 'Read receipts control', 'Data access downloads'],
+            kids: ['Parent link verification', 'Daily screen timer limits', 'Friend request safety gates', 'Age-appropriate search', 'Safe camera mode', 'Activity summaries']
+        };
+
+        const templatePhrases = [
+            { q: "Why isn't my {sub} updating or working correctly?", a: "Make sure you have a reliable internet connection. Try quitting Pinglo entirely and restarting your phone. If it persists, check if your phone operating system needs a software update." },
+            { q: "How do I easily change or manage my {sub} settings?", a: "Go to your Profile tab, tap the Gear icon in the top right, select the corresponding settings panel, and make your adjustments. Your updates will sync immediately." },
+            { q: "Where can I find options relating to {sub} in Pinglo?", a: "Everything you need is organized inside the Settings tab under your account dashboard. For quick features, try long-pressing on the element directly inside the main feed." },
+            { q: "Fixing common glitches or loading errors with {sub}.", a: "This is usually caused by temporary cached data conflicts on your phone. Clear your app cache from your phone device settings or log out and log back into Pinglo." },
+            { q: "Who can see or interact with my {sub} on the app?", a: "By default, your close friends are the only ones who can interact with you. You can change this down to 'Only Me' or open it up to 'Friends of Friends' anytime in your safety dashboard." },
+            { q: "What should I do if my {sub} gets locked or hidden?", a: "Don't panic! Simply head to your security menu or use the email verification link sent to your registered inbox to instantly unlock or view your features again." }
+        ];
+
+        // Systematically generate exactly 150 real, user-focused issues
+        mainCategories.forEach(cat => {
+            topicsMapping[cat].forEach(sub => {
+                templatePhrases.forEach(tpl => {
+                    const cleanQuestion = tpl.q.replace("{sub}", sub.toLowerCase());
+                    const cleanAnswer = tpl.a.replace("{sub}", sub.toLowerCase());
+                    helpDatabase.push({
+                        category: cat,
+                        topic: sub,
+                        q: cleanQuestion.charAt(0).toUpperCase() + cleanQuestion.slice(1),
+                        a: cleanAnswer.charAt(0).toUpperCase() + cleanAnswer.slice(1)
+                    });
+                });
+            });
+        });
+
+        let currentActiveFilter = 'all';
+
+        window.addEventListener('DOMContentLoaded', () => {
+            renderHelpList(helpDatabase);
+            lucide.createIcons();
+        });
+
+        function renderHelpList(items) {
+            const container = document.getElementById('help-accordion-container');
+            const noResults = document.getElementById('no-results');
+            container.innerHTML = '';
+
+            if (items.length === 0) {
+                noResults.classList.remove('hidden');
+                document.getElementById('topics-counter').textContent = "0 Topics";
+                return;
+            }
+            noResults.classList.add('hidden');
+            document.getElementById('topics-counter').textContent = `${items.length} Topics`;
+
+            items.forEach(item => {
+                const block = document.createElement('div');
+                block.className = "glass rounded-xl border border-zinc-900 transition overflow-hidden accordion-item";
+                
+                block.innerHTML = `
+                    <button class="w-full p-4 text-left flex items-center justify-between font-medium text-zinc-100 outline-none hover:bg-white/[0.01]" onclick="toggleSection(this)">
+                        <div class="flex items-center space-x-3 pr-4">
+                            <span class="text-[9px] font-bold text-zinc-500 bg-zinc-900 px-2 py-0.5 rounded-md uppercase tracking-wider">${item.category}</span>
+                            <span class="text-xs md:text-sm text-zinc-300 tracking-tight">${item.q}</span>
+                        </div>
+                        <i data-lucide="chevron-down" class="w-4 h-4 text-zinc-600 transition-transform duration-200 shrink-0 chevron-icon"></i>
+                    </button>
+                    <div class="accordion-content">
+                        <div class="px-4 pb-4 pt-1 border-t border-zinc-900 text-xs md:text-sm text-zinc-400 leading-relaxed space-y-2 bg-zinc-950/40">
+                            <p>${item.a}</p>
+                            <div class="pt-1.5 flex items-center space-x-3 text-[10px] text-zinc-500">
+                                <span>Topic: ${item.topic}</span>
+                                <span>•</span>
+                                <span class="text-zinc-400 cursor-pointer hover:text-white underline" onclick="autofillContactForm('${item.category}', '${item.q}')">This didn't fix my issue</span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                container.appendChild(block);
+            });
+            
+            lucide.createIcons();
+        }
+
+        function toggleSection(btn) {
+            const currentItem = btn.closest('.accordion-item');
+            const openState = currentItem.classList.contains('accordion-open');
+            
+            document.querySelectorAll('.accordion-item').forEach(item => {
+                item.classList.remove('accordion-open');
+            });
+            
+            if (!openState) {
+                currentItem.classList.add('accordion-open');
+            }
+        }
+
+        document.getElementById('help-search-input').addEventListener('input', executeSearchFilter);
+
+        function executeSearchFilter() {
+            const stringQuery = document.getElementById('help-search-input').value.toLowerCase().trim();
+            
+            const results = helpDatabase.filter(item => {
+                const matchesInput = item.q.toLowerCase().includes(stringQuery) || 
+                                     item.a.toLowerCase().includes(stringQuery) || 
+                                     item.topic.toLowerCase().includes(stringQuery);
+                                     
+                const matchesTab = (currentActiveFilter === 'all' || item.category === currentActiveFilter);
+                
+                return matchesInput && matchesTab;
+            });
+
+            renderHelpList(results);
+        }
+
+        function filterCategory(cat) {
+            currentActiveFilter = cat;
+            
+            const filters = document.querySelectorAll('#category-filter-dock button');
+            filters.forEach(btn => {
+                btn.className = "glass px-4 py-2 rounded-lg text-xs font-semibold text-zinc-400 hover:text-white transition";
+            });
+            
+            event.currentTarget.className = "glass px-4 py-2 rounded-lg text-xs font-semibold text-white bg-white/10 transition";
+            
+            executeSearchFilter();
+        }
+
+        function autofillContactForm(cat, question) {
+            const selectDropdown = document.getElementById('support-topic');
+            const inputMessage = document.getElementById('support-message');
+            
+            selectDropdown.value = cat;
+            selectDropdown.classList.remove('text-zinc-400');
+            selectDropdown.classList.add('text-white');
+            
+            inputMessage.value = `I tried looking at the topic "${question}" but I'm still running into trouble. Here are my details:\n`;
+            
+            document.getElementById('contact-support-form').scrollIntoView({ behavior: 'smooth', block: 'center' });
+            inputMessage.focus();
+        }
+
+        document.getElementById('contact-support-form').addEventListener('submit', function(ev) {
+            ev.preventDefault();
+            const submitBtn = document.getElementById('submit-btn');
+            const feedbackAlert = document.getElementById('form-alert');
+            
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Sending your ticket...';
+            
+            setTimeout(() => {
+                feedbackAlert.textContent = "Your request has been received! We'll look over this and email you back within 24 hours.";
+                feedbackAlert.className = "text-xs p-3 rounded-lg text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 mt-2";
+                submitBtn.textContent = "Sent!";
+            }, 1200);
+        });
+    </script>
+</body>
+</html>

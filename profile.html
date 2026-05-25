@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>My Profile — Pinglo</title>
+    <style>
+        body { background: #050816; color: white; font-family: sans-serif; margin: 0; }
+        .header { text-align: center; padding: 50px 20px; border-bottom: 1px solid #222; }
+        .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+        .post { background: #111; padding: 15px; border-radius: 10px; margin-bottom: 10px; border: 1px solid #333; }
+        .back-btn { position: absolute; top: 20px; left: 20px; color: #7c3aed; text-decoration: none; }
+    </style>
+</head>
+<body>
+
+    <a href="home.html" class="back-btn">← Back to Feed</a>
+
+    <div class="header">
+        <div style="width:80px; height:80px; background:#7c3aed; border-radius:50%; margin: 0 auto 15px; display:grid; place-items:center; font-size:30px; font-weight:bold;" id="userInitial">U</div>
+        <h2 id="userEmail">Loading...</h2>
+        <p class="muted">Your Personal Posts</p>
+    </div>
+
+    <div class="container" id="myPosts">
+        <p>Loading your history...</p>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        import { getFirestore, collection, query, where, getDocs, orderBy } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyACO46sTJQffwsQJfFN9cqYa_oDKG14AfQ",
+            authDomain: "hem-platform.firebaseapp.com",
+            projectId: "hem-platform",
+            storageBucket: "hem-platform.firebasestorage.app",
+            messagingSenderId: "846707696620",
+            appId: "1:846707696620:web:a64a8423f12f0e739816c9"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        onAuthStateChanged(auth, async (user) => {
+            if (!user) {
+                window.location.href = "login.html";
+            } else {
+                document.getElementById('userEmail').innerText = user.email;
+                document.getElementById('userInitial').innerText = user.email[0].toUpperCase();
+                
+                // Fetch User's Specific Posts
+                const q = query(collection(db, "posts"), where("user", "==", user.email));
+                const querySnapshot = await getDocs(q);
+                const container = document.getElementById('myPosts');
+                container.innerHTML = "";
+
+                if(querySnapshot.empty) container.innerHTML = "You haven't posted anything yet.";
+
+                querySnapshot.forEach((doc) => {
+                    const data = doc.data();
+                    container.innerHTML += `<div class="post"><p>${data.text}</p></div>`;
+                });
+            }
+        });
+    </script>
+</body>
+</html>

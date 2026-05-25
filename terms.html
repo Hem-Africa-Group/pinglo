@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Terms of Service | Pinglo</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        :root { --void: #020202; }
+        body { background-color: var(--void); color: #e5e7eb; font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif; }
+        .glass { background: rgba(255, 255, 255, 0.02); backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.05); }
+        .gradient-text { background: linear-gradient(to bottom right, #fff, #9ca3af); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    </style>
+</head>
+<div class="min-h-screen flex flex-col justify-between">
+    <!-- Nav -->
+    <nav class="p-8 max-w-5xl mx-auto w-full flex items-center justify-between border-b border-white/5">
+        <a href="login.html" class="flex items-center space-x-3 group">
+            <img src="http://127.0.0.1:5500/pinglo-icon.svg" alt="Pinglo" class="w-8 h-8 opacity-80 group-hover:opacity-100 transition">
+            <span class="text-xl font-black tracking-tighter text-white">Pinglo</span>
+        </a>
+        <div class="text-[10px] font-bold text-gray-500 uppercase tracking-[0.2em]">Legal Framework</div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="flex-1 max-w-3xl mx-auto w-full px-8 py-12">
+        <header class="mb-12">
+            <h1 class="text-4xl font-black tracking-tight text-white mb-2 gradient-text">Terms of Service</h1>
+            <p class="text-sm text-gray-500">Last Updated: May 24, 2026</p>
+        </header>
+
+        <div class="space-y-10 text-gray-400 leading-relaxed text-sm md:text-base">
+            <section class="space-y-3">
+                <h2 class="text-lg font-bold text-white tracking-tight">1. Contractual Agreement</h2>
+                <p>Welcome to Pinglo, a digital infrastructure asset operated by H.E.M. Africa Group ("Company," "we," "us," or "our"). By initializing an account, accessing our applications, or interfacing with our unified ecosystem, you agree to enter into a legally binding contract governed by these Terms of Service.</p>
+            </section>
+
+            <section class="space-y-3">
+                <h2 class="text-lg font-bold text-white tracking-tight">2. Account Verification & Eligibility</h2>
+                <p>You must be at least 13 years of age to establish a standard Pinglo account. If you are under 13, you are strictly limited to the <span class="text-blue-400">Pinglo Kids</span> managed environment under verifiable parental authorization.</p>
+                <p>You are exclusively responsible for maintaining the confidentiality of your credentials. Any payload, communication, or data packet processed through your authenticated endpoint is legally attributed to you.</p>
+            </section>
+
+            <section class="space-y-3">
+                <h2 class="text-lg font-bold text-white tracking-tight">3. Intellectual Property Rights</h2>
+                <p>All source code, proprietary user interface designs, logos (including Pinglo and H.E.M. proprietary structures), and system architectures are the sole property of H.E.M. Africa Group.</p>
+                <p>When you transmit media, text, or live streams through Pinglo, you grant us a worldwide, non-exclusive, royalty-free, sublicensable license to host, store, cache, and transmit that content solely to deliver our services. We do not claim ownership of your personal media.</p>
+            </section>
+
+            <section class="space-y-3">
+                <h2 class="text-lg font-bold text-white tracking-tight">4. Acceptable Use Policy</h2>
+                <p>You explicitly agree not to utilize H.E.M. infrastructure to:</p>
+                <ul class="list-disc pl-5 space-y-2 text-gray-500">
+                    <li>Deploy malicious bots, scrapers, or automation scripts against the API endpoints.</li>
+                    <li>Transmit illegal, threatening, defamatory, or hate-centric communication.</li>
+                    <li>Reverse-engineer, decompile, or attempt to extract the underlying source code of the applications.</li>
+                    <li>Interfere with network load balances or attempt to bypass security authentications.</li>
+                </ul>
+            </section>
+
+            <section class="space-y-3">
+                <h2 class="text-lg font-bold text-white tracking-tight">5. Pinglo Kids Framework</h2>
+                <p>Profiles inside the Kids environment are invisible to the public directory. They cannot search or be searched by standard adult Pinglo profiles. Any child account must be authenticated through a Parent/Guardian command center.</p>
+            </section>
+
+            <section class="space-y-3">
+                <h2 class="text-lg font-bold text-white tracking-tight">6. Limitation of Liability</h2>
+                <p>To the maximum extent permitted by applicable regional laws, H.E.M. Africa Group shall not be held liable for indirect, incidental, or consequential damages resulting from network downtime, lost data packets, or the conduct of unauthorized third parties.</p>
+            </section>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="p-8 border-t border-white/5 max-w-5xl mx-auto w-full flex flex-col md:flex-row justify-between items-center text-xs text-gray-600">
+        <p>© 2026 H.E.M. Africa Group</p>
+        <div class="flex space-x-6 mt-4 md:mt-0">
+            <a href="privacy.html" class="hover:text-gray-400 transition">Privacy Policy</a>
+            <a href="index.html" class="hover:text-gray-400 transition">Return to Login</a>
+        </div>
+    </footer>
+</div>
+</html>

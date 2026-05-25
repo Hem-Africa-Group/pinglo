@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-labelledby="title">
+  <title>Pinglo icon</title>
+  <path
+    d="M64 13c-28.2 0-51 20.5-51 45.8 0 13 6 24.7 15.7 33.1l-5.1 23.1 27-12.2c4.3 1.1 8.8 1.7 13.4 1.7 28.2 0 51-20.5 51-45.7S92.2 13 64 13Z"
+    fill="none"
+    stroke="#1598e7"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    stroke-width="12"
+  />
+  <circle cx="56" cy="65" r="13" fill="#1598e7" />
+  <path
+    d="M61 39c16.6 0 30 13.4 30 30"
+    fill="none"
+    stroke="#1598e7"
+    stroke-linecap="round"
+    stroke-width="12"
+  />
+</svg>

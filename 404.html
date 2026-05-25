@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Page Not Found | Pinglo</title>
+    <link rel="icon" href="./pinglo-icon.svg" type="image/svg+xml" />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        :root { --void: #09090b; }
+        body { background-color: var(--void); color: #f4f4f5; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+        .glass { background: rgba(255, 255, 255, 0.02); backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.05); }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between items-center p-6 text-center">
+    
+    <!-- Top Nav Branding Header -->
+    <header class="w-full max-w-5xl mx-auto flex justify-center pt-4">
+        <div class="flex items-center space-x-2.5">
+            <img src="pinglo-icon.svg" alt="Pinglo Logo" class="w-8 h-8" onError="this.parentNode.innerHTML='<div class=\"w-8 h-8 rounded-full bg-white flex items-center justify-center text-black font-black text-sm\>
+            <span class="text-xl font-black tracking-tight text-white">Pinglo</span>
+        </div>
+    </header>
+
+    <!-- Main Message Area -->
+    <main class="max-w-sm w-full my-auto space-y-6">
+        
+        <!-- Big Friendly Visual Icon -->
+        <div class="relative w-24 h-24 mx-auto flex items-center justify-center bg-zinc-900 rounded-3xl border border-zinc-800 shadow-xl">
+            <i data-lucide="message-square-dashed" class="w-10 h-10 text-zinc-500"></i>
+            <div class="absolute -top-1 -right-1 w-5 h-5 bg-red-500 rounded-full flex items-center justify-center text-[10px] font-bold text-white shadow-md animate-bounce">!</div>
+        </div>
+        
+        <!-- Plain English Text -->
+        <div class="space-y-2">
+            <h1 class="text-2xl font-black tracking-tight text-white">Lost your connection?</h1>
+            <p class="text-zinc-400 text-sm leading-relaxed px-2">
+                We couldn't find the page or chat link you're looking for. It might be broken, or it was deleted.
+            </p>
+        </div>
+
+        <!-- Clean App-style Action Buttons -->
+        <div class="space-y-2.5 pt-2">
+            <a href="index.html" class="w-full bg-white text-black font-bold py-3.5 rounded-xl hover:bg-zinc-200 transition text-sm flex items-center justify-center space-x-2 shadow-lg">
+                <i data-lucide="message-square" class="w-4 h-4"></i>
+                <span>Back to My Chats</span>
+            </a>
+            
+            <button onclick="window.history.back()" class="w-full glass text-zinc-300 font-semibold py-3.5 rounded-xl hover:bg-white/5 transition text-sm flex items-center justify-center space-x-2">
+                <i data-lucide="arrow-left" class="w-4 h-4 text-zinc-500"></i>
+                <span>Go Back</span>
+            </button>
+        </div>
+
+        <!-- Help Link Shortcut -->
+        <p class="text-xs text-zinc-600">
+            Running into a glitch? Visit our <a href="help.html" class="text-zinc-400 underline hover:text-white transition">Help Center</a>
+        </p>
+
+    </main>
+
+    <!-- Simple Modern Footer -->
+    <footer class="text-zinc-700 text-xs py-4">
+        &copy; 2026 Pinglo App
+    </footer>
+
+    <script>
+        window.addEventListener('DOMContentLoaded', () => {
+            lucide.createIcons();
+        });
+    </script>
+</body>
+</html>

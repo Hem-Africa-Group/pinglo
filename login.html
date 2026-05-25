@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pinglo | Redirecting...</title>
+    
+    <!-- Instant Routing Script -->
+    <script>
+        // Directly push the browser to the dashboard index without rendering the page body
+        window.location.replace("index.html");
+    </script>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { background-color: #09090b; color: #f4f4f5; font-family: -apple-system, BlinkMacSystemFont, sans-serif; }
+    </style>
+</head>
+<body class="min-h-screen flex items-center justify-center">
+    
+    <!-- Fallback indicator loader if the browser has a slow storage thread -->
+    <div class="text-center space-y-3">
+        <div class="w-6 h-6 border-2 border-zinc-700 border-t-white rounded-full animate-spin mx-auto"></div>
+        <p class="text-xs font-mono text-zinc-500 tracking-wider">ROUTING TO INDEX.HTML...</p>
+    </div>
+
+</body>
+</html>

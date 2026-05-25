@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pinglo — Login</title>
+    <link rel="stylesheet" href="style.css"> 
+    <style>
+        .login-container {
+            height: 100vh;
+            display: grid;
+            place-items: center;
+            padding: 20px;
+        }
+        .auth-card {
+            width: 100%;
+            max-width: 400px;
+            padding: 40px;
+            text-align: center;
+        }
+        input {
+            width: 100%;
+            padding: 14px;
+            margin: 10px 0;
+            border-radius: 14px;
+            border: 1px solid var(--border);
+            background: rgba(255,255,255,0.05);
+            color: white;
+            outline: none;
+        }
+        .auth-btn { width: 100%; margin-top: 20px; }
+    </style>
+</head>
+<body>
+    <div class="bg-grid"></div>
+    <div class="login-container">
+        <div class="panel auth-card">
+            <div class="brand-mark" style="margin: 0 auto 20px;">P</div>
+            <h2>Welcome to Pinglo</h2>
+            <p class="muted">Enter your details to continue</p>
+            <input type="email" id="email" placeholder="Email">
+            <input type="password" id="password" placeholder="Password">
+            <button class="btn auth-btn" id="loginBtn">Sign In</button>
+            <p style="margin-top: 20px; font-size: 13px;">
+                <span class="muted">Don't have an account?</span> 
+                <a href="#" id="toggleAuth" style="color: var(--brand2); text-decoration: none;">Sign Up</a>
+            </p>
+        </div>
+    </div>
+    <script type="module" src="app.js"></script>
+</body>
+</html>

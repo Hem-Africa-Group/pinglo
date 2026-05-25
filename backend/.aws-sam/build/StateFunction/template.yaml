@@ -1,0 +1,120 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+Description: Pinglo AWS backend with API Gateway, Lambda, DynamoDB, and S3 uploads.
+
+Globals:
+  Function:
+    Runtime: nodejs20.x
+    Timeout: 10
+    MemorySize: 256
+    Architectures:
+      - x86_64
+    Environment:
+      Variables:
+        STATE_TABLE: !Ref PingloStateTable
+        UPLOAD_BUCKET: !Ref PingloUploadBucket
+        ALLOWED_ORIGIN: !Ref AllowedOrigin
+
+Parameters:
+  AllowedOrigin:
+    Type: String
+    Default: "*"
+    Description: Frontend origin allowed by CORS. Use your deployed frontend URL in production.
+
+Resources:
+  PingloApi:
+    Type: AWS::Serverless::HttpApi
+    Properties:
+      CorsConfiguration:
+        AllowOrigins:
+          - !Ref AllowedOrigin
+        AllowMethods:
+          - GET
+          - POST
+          - PUT
+          - OPTIONS
+        AllowHeaders:
+          - content-type
+          - x-user-id
+          - authorization
+
+  PingloStateTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: userId
+          AttributeType: S
+      KeySchema:
+        - AttributeName: userId
+          KeyType: HASH
+      SSESpecification:
+        SSEEnabled: true
+
+  PingloUploadBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      CorsConfiguration:
+        CorsRules:
+          - AllowedHeaders:
+              - "*"
+            AllowedMethods:
+              - PUT
+              - GET
+            AllowedOrigins:
+              - !Ref AllowedOrigin
+            MaxAge: 3000
+
+  StateFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: .
+      Handler: src/state.handler
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref PingloStateTable
+      Events:
+        GetState:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref PingloApi
+            Path: /state
+            Method: GET
+        PutState:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref PingloApi
+            Path: /state
+            Method: PUT
+
+  UploadsFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: .
+      Handler: src/uploads.handler
+      Policies:
+        - S3CrudPolicy:
+            BucketName: !Ref PingloUploadBucket
+      Events:
+        CreateUpload:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref PingloApi
+            Path: /uploads/presign
+            Method: POST
+
+Outputs:
+  ApiUrl:
+    Description: Base URL for the Pinglo API
+    Value: !Sub "https://${PingloApi}.execute-api.${AWS::Region}.amazonaws.com"
+  StateTableName:
+    Description: DynamoDB table for user state
+    Value: !Ref PingloStateTable
+  UploadBucketName:
+    Description: S3 bucket for uploaded attachments
+    Value: !Ref PingloUploadBucket

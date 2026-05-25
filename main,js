@@ -1,0 +1,19 @@
+import { AppConfig } from './config.js';
+import { Templates } from './pages.js';
+
+function navigate(view) {
+    const root = document.getElementById('pageRoot');
+    // Security: Check if user is logged in for restricted pages
+    if (view === 'profile' && !isLoggedIn()) {
+        loadPage('login');
+        return;
+    }
+    root.innerHTML = Templates[view];
+}
+
+// Data Saver Enforcement
+document.addEventListener('change', (e) => {
+    if(e.target.id === 'dataSaver') {
+        document.body.classList.toggle('data-saver', e.target.checked);
+    }
+});
